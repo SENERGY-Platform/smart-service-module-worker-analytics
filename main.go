@@ -20,7 +20,8 @@ import (
 	"context"
 	"flag"
 	"github.com/SENERGY-Platform/smart-service-module-worker-analytics/pkg"
-	"github.com/SENERGY-Platform/smart-service-module-worker-analytics/pkg/configuration"
+	"github.com/SENERGY-Platform/smart-service-module-worker-analytics/pkg/analytics"
+	"github.com/SENERGY-Platform/smart-service-module-worker-lib/pkg/configuration"
 	"log"
 	"os"
 	"os/signal"
@@ -32,7 +33,11 @@ func main() {
 	configLocation := flag.String("config", "config.json", "configuration file")
 	flag.Parse()
 
-	config, err := configuration.Load(*configLocation)
+	libConfig, err := configuration.LoadLibConfig(*configLocation)
+	if err != nil {
+		log.Fatal(err)
+	}
+	config, err := configuration.Load[analytics.Config](*configLocation)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -41,7 +46,7 @@ func main() {
 
 	wg := &sync.WaitGroup{}
 
-	err = pkg.Start(ctx, wg, config)
+	err = pkg.Start(ctx, wg, config, libConfig)
 	if err != nil {
 		log.Fatal(err)
 	}

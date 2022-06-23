@@ -19,17 +19,17 @@ package pkg
 import (
 	"context"
 	"github.com/SENERGY-Platform/smart-service-module-worker-analytics/pkg/analytics"
-	"github.com/SENERGY-Platform/smart-service-module-worker-analytics/pkg/auth"
-	"github.com/SENERGY-Platform/smart-service-module-worker-analytics/pkg/camunda"
-	"github.com/SENERGY-Platform/smart-service-module-worker-analytics/pkg/configuration"
-	"github.com/SENERGY-Platform/smart-service-module-worker-analytics/pkg/smartservicerepository"
+	lib "github.com/SENERGY-Platform/smart-service-module-worker-lib"
+	"github.com/SENERGY-Platform/smart-service-module-worker-lib/pkg/auth"
+	"github.com/SENERGY-Platform/smart-service-module-worker-lib/pkg/camunda"
+	"github.com/SENERGY-Platform/smart-service-module-worker-lib/pkg/configuration"
+	"github.com/SENERGY-Platform/smart-service-module-worker-lib/pkg/smartservicerepository"
 	"sync"
 )
 
-func Start(ctx context.Context, wg *sync.WaitGroup, config configuration.Config) error {
-	auth := auth.New(config)
-	smartServiceRepo := smartservicerepository.New(config, auth)
-	handler := analytics.New(config, auth, smartServiceRepo)
-	camunda.Start(ctx, wg, config, smartServiceRepo, handler)
-	return nil
+func Start(ctx context.Context, wg *sync.WaitGroup, config analytics.Config, libConfig configuration.Config) error {
+	handlerFactory := func(auth *auth.Auth, smartServiceRepo *smartservicerepository.SmartServiceRepository) (camunda.Handler, error) {
+		return analytics.New(config, libConfig, auth, smartServiceRepo), nil
+	}
+	return lib.Start(ctx, wg, libConfig, handlerFactory)
 }

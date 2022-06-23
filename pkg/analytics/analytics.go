@@ -18,21 +18,22 @@ package analytics
 
 import (
 	"fmt"
-	"github.com/SENERGY-Platform/smart-service-module-worker-analytics/pkg/auth"
-	"github.com/SENERGY-Platform/smart-service-module-worker-analytics/pkg/configuration"
-	"github.com/SENERGY-Platform/smart-service-module-worker-analytics/pkg/model"
+	"github.com/SENERGY-Platform/smart-service-module-worker-lib/pkg/auth"
+	"github.com/SENERGY-Platform/smart-service-module-worker-lib/pkg/configuration"
+	"github.com/SENERGY-Platform/smart-service-module-worker-lib/pkg/model"
 	"io"
 	"log"
 	"net/http"
 	"runtime/debug"
 )
 
-func New(config configuration.Config, auth *auth.Auth, smartServiceRepo SmartServiceRepo) *Analytics {
-	return &Analytics{config: config, auth: auth, smartServiceRepo: smartServiceRepo}
+func New(config Config, libConfig configuration.Config, auth *auth.Auth, smartServiceRepo SmartServiceRepo) *Analytics {
+	return &Analytics{config: config, libConfig: libConfig, auth: auth, smartServiceRepo: smartServiceRepo}
 }
 
 type Analytics struct {
-	config           configuration.Config
+	config           Config
+	libConfig        configuration.Config
 	auth             *auth.Auth
 	smartServiceRepo SmartServiceRepo
 }
@@ -67,7 +68,7 @@ func (this *Analytics) Do(task model.CamundaExternalTask) (modules []model.Modul
 			ProcesInstanceId: task.ProcessInstanceId,
 			SmartServiceModuleInit: model.SmartServiceModuleInit{
 				DeleteInfo: analyticsModuleDeleteInfo,
-				ModuleType: this.config.CamundaWorkerTopic,
+				ModuleType: this.libConfig.CamundaWorkerTopic,
 				ModuleData: moduleData,
 			},
 		}},

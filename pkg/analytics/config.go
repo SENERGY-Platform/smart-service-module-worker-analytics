@@ -14,18 +14,8 @@
  * limitations under the License.
  */
 
-package smartservicerepository
+package analytics
 
-import (
-	"github.com/SENERGY-Platform/smart-service-module-worker-analytics/pkg/auth"
-	"github.com/SENERGY-Platform/smart-service-module-worker-analytics/pkg/configuration"
-)
-
-type SmartServiceRepository struct {
-	config configuration.Config
-	auth   *auth.Auth
-}
-
-func New(config configuration.Config, auth *auth.Auth) *SmartServiceRepository {
-	return &SmartServiceRepository{config: config, auth: auth}
+type Config struct {
+	WorkerParamPrefix string `json:"worker_param_prefix"`
 }

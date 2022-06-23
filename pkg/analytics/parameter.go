@@ -18,7 +18,7 @@ package analytics
 
 import (
 	"encoding/json"
-	"github.com/SENERGY-Platform/smart-service-module-worker-analytics/pkg/model"
+	"github.com/SENERGY-Platform/smart-service-module-worker-lib/pkg/model"
 )
 
 func (this *Analytics) getModuleData(task model.CamundaExternalTask) (result map[string]interface{}) {
