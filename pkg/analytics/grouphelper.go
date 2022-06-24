@@ -71,6 +71,12 @@ func (this *Analytics) getServicesAndPathsForDevices(token auth.Token, deviceLis
 
 func (this *Analytics) getDeviceGroupPathOptions(token auth.Token, criteria []devices.FilterCriteria, deviceTypeIds []string) (result map[string][]devices.PathOptionsResultElement, err error) {
 	result = map[string][]devices.PathOptionsResultElement{}
+	for i, c := range criteria {
+		if c.Interaction == "" {
+			c.Interaction = devices.EVENT
+		}
+		criteria[i] = c
+	}
 	selectables, err := this.devices.GetDeviceTypeSelectables(token, criteria)
 	if err != nil {
 		return result, err

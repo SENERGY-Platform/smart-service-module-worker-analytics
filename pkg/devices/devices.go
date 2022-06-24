@@ -105,7 +105,7 @@ func (this *Devices) GetDeviceTypeSelectables(token auth.Token, criteria []Filte
 	if err != nil {
 		return result, err
 	}
-	req, err := http.NewRequest("POST", this.deviceRepositoryUrl+"/query/device-type-selectables?interactions-filter=event", requestBody)
+	req, err := http.NewRequest("POST", this.deviceRepositoryUrl+"/v2/query/device-type-selectables", requestBody)
 	if err != nil {
 		debug.PrintStack()
 		return result, err

@@ -17,10 +17,19 @@
 package devices
 
 type FilterCriteria struct {
-	FunctionId    string `json:"function_id"`
-	DeviceClassId string `json:"device_class_id"`
-	AspectId      string `json:"aspect_id"`
+	Interaction   Interaction `json:"interaction"`
+	FunctionId    string      `json:"function_id"`
+	DeviceClassId string      `json:"device_class_id"`
+	AspectId      string      `json:"aspect_id"`
 }
+
+type Interaction string
+
+const (
+	EVENT             Interaction = "event"
+	REQUEST           Interaction = "request"
+	EVENT_AND_REQUEST Interaction = "event+request"
+)
 
 type Device struct {
 	Id           string `json:"id"`
