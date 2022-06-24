@@ -1,5 +1,11 @@
 {
+    "debug": false,
     "smart_service_repository_url": "",
+    "flow_engine_url": "",
+    "flow_parser_url": "",
+    "import_deploy_url": "",
+    "perm_search_url": "",
+    "device_repository_url": "",
     "camunda_url": "",
 
     "camunda_worker_id": "analytics",
@@ -14,5 +20,10 @@
     "auth_client_id": "",
     "auth_client_secret": "",
     "token_cache_default_expiration_in_seconds": 60,
-    "token_cache_size_in_mb": 20
+    "token_cache_size_in_mb": 20,
+
+    "enable_multiple_paths": false,
+    "device_path_prefix": "value.",
+    "group_path_prefix": "value.",
+    "import_path_prefix": "value."
 }

@@ -19,6 +19,8 @@ package pkg
 import (
 	"context"
 	"github.com/SENERGY-Platform/smart-service-module-worker-analytics/pkg/analytics"
+	"github.com/SENERGY-Platform/smart-service-module-worker-analytics/pkg/devices"
+	"github.com/SENERGY-Platform/smart-service-module-worker-analytics/pkg/imports"
 	lib "github.com/SENERGY-Platform/smart-service-module-worker-lib"
 	"github.com/SENERGY-Platform/smart-service-module-worker-lib/pkg/auth"
 	"github.com/SENERGY-Platform/smart-service-module-worker-lib/pkg/camunda"
@@ -29,7 +31,14 @@ import (
 
 func Start(ctx context.Context, wg *sync.WaitGroup, config analytics.Config, libConfig configuration.Config) error {
 	handlerFactory := func(auth *auth.Auth, smartServiceRepo *smartservicerepository.SmartServiceRepository) (camunda.Handler, error) {
-		return analytics.New(config, libConfig, auth, smartServiceRepo), nil
+		return analytics.New(
+			config,
+			libConfig,
+			auth,
+			smartServiceRepo,
+			imports.New(config.ImportDeployUrl),
+			devices.New(config.DeviceRepositoryUrl, config.PermSearchUrl),
+		), nil
 	}
 	return lib.Start(ctx, wg, libConfig, handlerFactory)
 }

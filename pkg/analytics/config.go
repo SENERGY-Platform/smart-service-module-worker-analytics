@@ -17,5 +17,16 @@
 package analytics
 
 type Config struct {
-	WorkerParamPrefix string `json:"worker_param_prefix"`
+	WorkerParamPrefix   string `json:"worker_param_prefix"`
+	FlowEngineUrl       string `json:"flow_engine_url"`
+	FlowParserUrl       string `json:"flow_parser_url"`
+	ImportDeployUrl     string `json:"import_deploy_url"`
+	PermSearchUrl       string `json:"perm_search_url"`
+	DeviceRepositoryUrl string `json:"device_repository_url"`
+	Debug               bool   `json:"debug"`
+
+	EnableMultiplePaths bool   `json:"enable_multiple_paths"`
+	DevicePathPrefix    string `json:"device_path_prefix"`
+	GroupPathPrefix     string `json:"group_path_prefix"`
+	ImportPathPrefix    string `json:"import_path_prefix"`
 }
