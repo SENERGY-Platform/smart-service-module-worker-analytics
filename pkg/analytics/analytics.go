@@ -224,10 +224,10 @@ func (this *Analytics) selectionToNodeInputs(token auth.Token, selection model.I
 		if selection.DeviceSelection.ServiceId == nil {
 			return this.deviceWithoutServiceSelectionToNodeInputs(token, *selection.DeviceSelection, task, inputId, portName)
 		}
-		return this.deviceSelectionToNodeInputs(*selection.DeviceSelection)
+		return this.deviceSelectionToNodeInputs(*selection.DeviceSelection, portName)
 	}
 	if selection.ImportSelection != nil {
-		return this.importSelectionToNodeInputs(token, *selection.ImportSelection)
+		return this.importSelectionToNodeInputs(token, *selection.ImportSelection, portName)
 	}
 	if selection.DeviceGroupSelection != nil {
 		return this.groupSelectionToNodeInputs(token, *selection.DeviceGroupSelection, task, inputId, portName)
@@ -235,7 +235,7 @@ func (this *Analytics) selectionToNodeInputs(token auth.Token, selection model.I
 	return result, errors.New("expect selection to contain none nil value")
 }
 
-func (this *Analytics) deviceSelectionToNodeInputs(selection model.DeviceSelection) (result []NodeInput, err error) {
+func (this *Analytics) deviceSelectionToNodeInputs(selection model.DeviceSelection, inputPort string) (result []NodeInput, err error) {
 	if selection.ServiceId == nil {
 		return result, errors.New("expect device selection to contain service info")
 	}
@@ -248,7 +248,7 @@ func (this *Analytics) deviceSelectionToNodeInputs(selection model.DeviceSelecti
 		FilterType: DeviceFilterType,
 		TopicName:  ServiceIdToTopic(*selection.ServiceId),
 		Values: []NodeValue{{
-			Name: "value",
+			Name: inputPort,
 			Path: path,
 		}},
 	}}, nil
@@ -263,7 +263,7 @@ func (this *Analytics) deviceWithoutServiceSelectionToNodeInputs(token auth.Toke
 	if err != nil {
 		return result, err
 	}
-	result = this.serviceInfosToNodeInputs(serviceIds, serviceToDevices, serviceToPaths)
+	result = this.serviceInfosToNodeInputs(serviceIds, serviceToDevices, serviceToPaths, portName)
 	return result, nil
 }
 
@@ -276,11 +276,11 @@ func (this *Analytics) groupSelectionToNodeInputs(token auth.Token, selection mo
 	if err != nil {
 		return result, err
 	}
-	result = this.serviceInfosToNodeInputs(serviceIds, serviceToDevices, serviceToPaths)
+	result = this.serviceInfosToNodeInputs(serviceIds, serviceToDevices, serviceToPaths, portName)
 	return result, nil
 }
 
-func (this *Analytics) serviceInfosToNodeInputs(serviceIds []string, serviceToDevices map[string][]string, serviceToPaths map[string][]string) (result []NodeInput) {
+func (this *Analytics) serviceInfosToNodeInputs(serviceIds []string, serviceToDevices map[string][]string, serviceToPaths map[string][]string, inputPort string) (result []NodeInput) {
 	for _, serviceId := range serviceIds {
 		deviceIds := strings.Join(serviceToDevices[serviceId], ",")
 		if deviceIds == "" {
@@ -296,13 +296,13 @@ func (this *Analytics) serviceInfosToNodeInputs(serviceIds []string, serviceToDe
 		if this.config.EnableMultiplePaths {
 			for _, path := range paths {
 				values = append(values, NodeValue{
-					Name: "value",
+					Name: inputPort,
 					Path: this.config.GroupPathPrefix + path,
 				})
 			}
 		} else {
 			values = []NodeValue{{
-				Name: "value",
+				Name: inputPort,
 				Path: this.config.GroupPathPrefix + paths[0],
 			}}
 		}
@@ -317,7 +317,7 @@ func (this *Analytics) serviceInfosToNodeInputs(serviceIds []string, serviceToDe
 	return result
 }
 
-func (this *Analytics) importSelectionToNodeInputs(token auth.Token, selection model.ImportSelection) (result []NodeInput, err error) {
+func (this *Analytics) importSelectionToNodeInputs(token auth.Token, selection model.ImportSelection, inputPort string) (result []NodeInput, err error) {
 	if selection.Id == "" {
 		return result, errors.New("expect import selection to contain id")
 	}
@@ -334,7 +334,7 @@ func (this *Analytics) importSelectionToNodeInputs(token auth.Token, selection m
 		FilterType: ImportFilterType,
 		TopicName:  topic,
 		Values: []NodeValue{{
-			Name: "value",
+			Name: inputPort,
 			Path: path,
 		}},
 	}}, nil
