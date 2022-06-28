@@ -1,0 +1,7 @@
+[
+    {
+        "method":"POST",
+        "endpoint":"/engine-rest/external-task/task1/complete",
+        "message":"{\"workerId\":\"analytics\",\"localVariables\":{\"pipeline_id\":{\"value\":\"1e138d25-d5ee-4a89-9a83-630f4308941a\"}}}\n"
+    }
+]
