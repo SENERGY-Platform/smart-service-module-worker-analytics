@@ -28,6 +28,7 @@ import (
 	"net/http"
 	"net/url"
 	"runtime/debug"
+	"sort"
 	"strings"
 )
 
@@ -214,6 +215,9 @@ func (this *Analytics) inputsToNodes(token auth.Token, task model.CamundaExterna
 			}
 			node.Inputs = append(node.Inputs, nodeInput...)
 		}
+		sort.Slice(node.Inputs, func(i, j int) bool {
+			return node.Inputs[i].TopicName < node.Inputs[j].TopicName
+		})
 		result = append(result, node)
 	}
 	return result, nil
