@@ -82,7 +82,7 @@ func (this *Import) getRouter() http.Handler {
 		this.logRequest(request)
 		if request.Method == "GET" && strings.HasPrefix(request.URL.Path, "/instances/") {
 			json.NewEncoder(writer).Encode(imports.Import{
-				KafkaTopic: strings.TrimPrefix(request.URL.Path, "/instances/"),
+				KafkaTopic: strings.TrimPrefix(request.URL.Path, "/instances/") + "_topic",
 			})
 			return
 		}
