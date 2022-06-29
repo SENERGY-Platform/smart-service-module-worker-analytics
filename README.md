@@ -1,3 +1,9 @@
+## Outputs
+
+### Pipeline-Id
+
+- Desc: id of created pipeline
+- Variable-Name: pipeline_id
 
 ## Camunda-Input-Variables
 
