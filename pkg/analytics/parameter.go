@@ -101,6 +101,22 @@ func (this *Analytics) getFlowId(task model.CamundaExternalTask) string {
 	return result
 }
 
+func (this *Analytics) getPersistData(task model.CamundaExternalTask, inputId string) (result bool) {
+	variable, ok := task.Variables[this.config.WorkerParamPrefix+"persistData."+inputId]
+	if !ok {
+		return false
+	}
+	str, ok := variable.Value.(string)
+	if !ok {
+		return false
+	}
+	err := json.Unmarshal([]byte(str), &result)
+	if err != nil {
+		return false
+	}
+	return result
+}
+
 func (this *Analytics) getPipelineNodeConfig(task model.CamundaExternalTask, inputId string, confName string) (string, error) {
 	variable, ok := task.Variables[this.config.WorkerParamPrefix+"conf."+inputId+"."+confName]
 	if !ok {

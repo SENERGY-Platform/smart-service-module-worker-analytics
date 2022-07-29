@@ -190,9 +190,10 @@ func (this *Analytics) doAnalytics(token auth.Token, task model.CamundaExternalT
 func (this *Analytics) inputsToNodes(token auth.Token, task model.CamundaExternalTask, inputs []FlowModelCell) (result []PipelineNode, err error) {
 	for _, input := range inputs {
 		node := PipelineNode{
-			NodeId: input.Id,
-			Inputs: nil,
-			Config: nil,
+			NodeId:      input.Id,
+			Inputs:      nil,
+			Config:      nil,
+			PersistData: this.getPersistData(task, input.Id),
 		}
 		for _, conf := range input.Config {
 			nodeConf := NodeConfig{

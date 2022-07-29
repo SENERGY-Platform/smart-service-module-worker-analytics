@@ -59,6 +59,13 @@
 - Value: json.Marshal([]devices.FilterCriteria{})
 - Value-Example: `[{"function_id": "foo", "aspect_id": "bar"}]`
 
+### Input-PersistData
+
+- Desc: optional
+- Variable-Name-Template: `{{config.WorkerParamPrefix}}.persistData.{{inputId}}`
+- Variable-Name-Example: `analytics.persistData.373808f2-848a-4446-8062-abd973dc96d3`
+- Value: json.Marshal(boolean)
+
 ### Input-Config
 
 - Desc: sets the iot selection of a flow-input-port

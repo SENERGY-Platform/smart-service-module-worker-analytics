@@ -28,9 +28,10 @@ type PipelineRequest struct {
 }
 
 type PipelineNode struct {
-	NodeId string       `json:"nodeId,omitempty"`
-	Inputs []NodeInput  `json:"inputs,omitempty"`
-	Config []NodeConfig `json:"config,omitempty"`
+	NodeId      string       `json:"nodeId,omitempty"`
+	Inputs      []NodeInput  `json:"inputs,omitempty"`
+	Config      []NodeConfig `json:"config,omitempty"`
+	PersistData bool         `json:"persistData,omitempty"`
 }
 
 type NodeConfig struct {
