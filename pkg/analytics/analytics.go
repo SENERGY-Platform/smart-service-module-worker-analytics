@@ -218,25 +218,7 @@ func (this *Analytics) inputsToNodes(token auth.Token, task model.CamundaExterna
 		}
 
 		//group inputs by topic, and filter
-		group := map[string][]NodeInput{}
-		for _, in := range node.Inputs {
-			group[in.TopicName+"_"+in.FilterType+"_"+in.FilterIds] = append(group[in.TopicName], in)
-		}
-		node.Inputs = []NodeInput{}
-		for _, element := range group {
-			elementInput := NodeInput{
-				FilterIds:  "",
-				FilterType: "",
-				TopicName:  "",
-			}
-			for _, sub := range element {
-				elementInput.Values = append(elementInput.Values, sub.Values...)
-				elementInput.FilterType = sub.FilterType
-				elementInput.FilterIds = sub.FilterIds
-				elementInput.TopicName = sub.TopicName
-			}
-			node.Inputs = append(node.Inputs, elementInput)
-		}
+		node.Inputs = groupInputs(node.Inputs)
 
 		sort.Slice(node.Inputs, func(i, j int) bool {
 			return node.Inputs[i].TopicName < node.Inputs[j].TopicName
@@ -244,6 +226,30 @@ func (this *Analytics) inputsToNodes(token auth.Token, task model.CamundaExterna
 		result = append(result, node)
 	}
 	return result, nil
+}
+
+func groupInputs(in []NodeInput) (out []NodeInput) {
+	group := map[string][]NodeInput{}
+	for _, element := range in {
+		key := element.TopicName + "_" + element.FilterType + "_" + element.FilterIds
+		group[key] = append(group[key], element)
+	}
+	out = []NodeInput{}
+	for _, element := range group {
+		elementInput := NodeInput{
+			FilterIds:  "",
+			FilterType: "",
+			TopicName:  "",
+		}
+		for _, sub := range element {
+			elementInput.Values = append(elementInput.Values, sub.Values...)
+			elementInput.FilterType = sub.FilterType
+			elementInput.FilterIds = sub.FilterIds
+			elementInput.TopicName = sub.TopicName
+		}
+		out = append(out, elementInput)
+	}
+	return out
 }
 
 func (this *Analytics) selectionToNodeInputs(token auth.Token, selection model.IotOption, task model.CamundaExternalTask, inputId string, portName string) (result []NodeInput, err error) {
