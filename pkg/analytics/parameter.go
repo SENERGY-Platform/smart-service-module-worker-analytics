@@ -23,6 +23,7 @@ import (
 	"github.com/SENERGY-Platform/smart-service-module-worker-analytics/pkg/devices"
 	"github.com/SENERGY-Platform/smart-service-module-worker-lib/pkg/model"
 	"strconv"
+	"strings"
 )
 
 func (this *Analytics) getModuleData(task model.CamundaExternalTask) (result map[string]interface{}) {
@@ -120,7 +121,13 @@ func (this *Analytics) getPersistData(task model.CamundaExternalTask, inputId st
 func (this *Analytics) getPipelineNodeConfig(task model.CamundaExternalTask, inputId string, confName string) (string, error) {
 	variable, ok := task.Variables[this.config.WorkerParamPrefix+"conf."+inputId+"."+confName]
 	if !ok {
-		return "", errors.New("missing pipeline input config (" + this.config.WorkerParamPrefix + "conf." + inputId + "." + confName + ")")
+		return "", nil //errors.New("missing pipeline input config (" + this.config.WorkerParamPrefix + "conf." + inputId + "." + confName + ")")
+	}
+	if strings.ToLower(variable.Type) == "null" {
+		return "", nil
+	}
+	if variable.Value == nil {
+		return "", nil
 	}
 	result, ok := variable.Value.(string)
 	if !ok {
