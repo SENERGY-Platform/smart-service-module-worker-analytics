@@ -216,6 +216,28 @@ func (this *Analytics) inputsToNodes(token auth.Token, task model.CamundaExterna
 			}
 			node.Inputs = append(node.Inputs, nodeInput...)
 		}
+
+		//group inputs by topic, and filter
+		group := map[string][]NodeInput{}
+		for _, in := range node.Inputs {
+			group[in.TopicName+"_"+in.FilterType+"_"+in.FilterIds] = append(group[in.TopicName], in)
+		}
+		node.Inputs = []NodeInput{}
+		for _, element := range group {
+			elementInput := NodeInput{
+				FilterIds:  "",
+				FilterType: "",
+				TopicName:  "",
+			}
+			for _, sub := range element {
+				elementInput.Values = append(elementInput.Values, sub.Values...)
+				elementInput.FilterType = sub.FilterType
+				elementInput.FilterIds = sub.FilterIds
+				elementInput.TopicName = sub.TopicName
+			}
+			node.Inputs = append(node.Inputs, elementInput)
+		}
+
 		sort.Slice(node.Inputs, func(i, j int) bool {
 			return node.Inputs[i].TopicName < node.Inputs[j].TopicName
 		})
