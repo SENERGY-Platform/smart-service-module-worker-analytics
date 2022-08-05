@@ -131,7 +131,11 @@ func (this *Analytics) getPipelineNodeConfig(task model.CamundaExternalTask, inp
 	}
 	result, ok := variable.Value.(string)
 	if !ok {
-		return "", errors.New("unable to interpret pipeline input config (" + this.config.WorkerParamPrefix + "conf." + inputId + "." + confName + ")")
+		temp, err := json.Marshal(variable.Value)
+		if err != nil {
+			return "", errors.New("unable to interpret pipeline input config (" + this.config.WorkerParamPrefix + "conf." + inputId + "." + confName + ")")
+		}
+		return string(temp), err
 	}
 	return result, nil
 }
