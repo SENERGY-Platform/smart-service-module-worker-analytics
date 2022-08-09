@@ -119,7 +119,8 @@ func (this *Analytics) getPersistData(task model.CamundaExternalTask, inputId st
 }
 
 func (this *Analytics) getPipelineNodeConfig(task model.CamundaExternalTask, inputId string, confName string) (string, error) {
-	variable, ok := task.Variables[this.config.WorkerParamPrefix+"conf."+inputId+"."+confName]
+	key := this.config.WorkerParamPrefix + "conf." + inputId + "." + confName
+	variable, ok := task.Variables[key]
 	if !ok {
 		return "", nil //errors.New("missing pipeline input config (" + this.config.WorkerParamPrefix + "conf." + inputId + "." + confName + ")")
 	}
@@ -129,15 +130,22 @@ func (this *Analytics) getPipelineNodeConfig(task model.CamundaExternalTask, inp
 	if variable.Value == nil {
 		return "", nil
 	}
-	result, ok := variable.Value.(string)
-	if !ok {
+	switch v := variable.Value.(type) {
+	case string:
+		return v, nil
+	case map[string]interface{}:
+		temp, err := json.Marshal(v["value"])
+		if err != nil {
+			return "", fmt.Errorf("unable to interpret pipeline input config %v (%v) \n%w", key, v, err)
+		}
+		return string(temp), err
+	default:
 		temp, err := json.Marshal(variable.Value)
 		if err != nil {
-			return "", errors.New("unable to interpret pipeline input config (" + this.config.WorkerParamPrefix + "conf." + inputId + "." + confName + ")")
+			return "", fmt.Errorf("unable to interpret pipeline input config %v (%v) \n%w", key, v, err)
 		}
 		return string(temp), err
 	}
-	return result, nil
 }
 
 func (this *Analytics) getSelection(task model.CamundaExternalTask, inputId string, portName string) (result model.IotOption, err error) {
