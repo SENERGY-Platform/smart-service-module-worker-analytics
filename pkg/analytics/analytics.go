@@ -163,6 +163,10 @@ func (this *Analytics) doAnalytics(token auth.Token, task model.CamundaExternalT
 	if err != nil {
 		return moduleData, deleteInfo, outputs, err
 	}
+	pipelineRequest.MergeStrategy, err = this.getPipelineMergeStrategy(task)
+	if err != nil {
+		return moduleData, deleteInfo, outputs, err
+	}
 
 	pipelineRequest.Description = this.getPipelineDescription(task)
 

@@ -26,6 +26,7 @@ import (
 	"github.com/SENERGY-Platform/smart-service-module-worker-lib/pkg/configuration"
 	"github.com/SENERGY-Platform/smart-service-module-worker-lib/pkg/model"
 	"io/ioutil"
+	"os"
 	"reflect"
 	"sync"
 	"testing"
@@ -47,7 +48,7 @@ func TestWithMocks(t *testing.T) {
 		return
 	}
 
-	infos, err := ioutil.ReadDir(RESOURCE_BASE_DIR)
+	infos, err := os.ReadDir(RESOURCE_BASE_DIR)
 	if err != nil {
 		t.Error(err)
 		return
@@ -212,7 +213,7 @@ func mockTest(
 		return
 	}
 
-	expectedEngineRequestsFile, err := ioutil.ReadFile(RESOURCE_BASE_DIR + name + "/expected_engine_requests.json")
+	expectedEngineRequestsFile, err := os.ReadFile(RESOURCE_BASE_DIR + name + "/expected_engine_requests.json")
 	if err != nil {
 		t.Error(err)
 		return
@@ -253,7 +254,8 @@ func mockTest(
 
 	actualEngineRequests := flowengine.PopRequestLog()
 	if !reflect.DeepEqual(expectedEngineRequests, actualEngineRequests) {
-		temp, _ := json.Marshal(actualEngineRequests)
-		t.Error(string(temp))
+		a, _ := json.Marshal(actualEngineRequests)
+		e, _ := json.Marshal(expectedEngineRequests)
+		t.Error("\n", string(a), "\n", string(e))
 	}
 }

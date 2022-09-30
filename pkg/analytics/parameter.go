@@ -78,6 +78,21 @@ func (this *Analytics) getPipelineWindowTime(task model.CamundaExternalTask) (in
 	}
 }
 
+func (this *Analytics) getPipelineMergeStrategy(task model.CamundaExternalTask) (string, error) {
+	variable, ok := task.Variables[this.config.WorkerParamPrefix+"merge_strategy"]
+	if !ok {
+		return "inner", nil
+	}
+	value, ok := variable.Value.(string)
+	if !ok {
+		return "inner", errors.New("expected string for merge_strategy")
+	}
+	if value == "" {
+		return "inner", nil
+	}
+	return value, nil
+}
+
 func (this *Analytics) getPipelineDescription(task model.CamundaExternalTask) string {
 	variable, ok := task.Variables[this.config.WorkerParamPrefix+"desc"]
 	if !ok {

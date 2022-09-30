@@ -19,12 +19,13 @@ package analytics
 import uuid "github.com/satori/go.uuid"
 
 type PipelineRequest struct {
-	Id          string         `json:"id,omitempty"`
-	FlowId      string         `json:"flowId,omitempty"`
-	Name        string         `json:"name,omitempty"`
-	Description string         `json:"description,omitempty"`
-	WindowTime  int            `json:"windowTime,omitempty"`
-	Nodes       []PipelineNode `json:"nodes,omitempty"`
+	Id            string         `json:"id,omitempty"`
+	FlowId        string         `json:"flowId,omitempty"`
+	Name          string         `json:"name,omitempty"`
+	Description   string         `json:"description,omitempty"`
+	WindowTime    int            `json:"windowTime,omitempty"`
+	MergeStrategy string         `json:"mergeStrategy,omitempty"`
+	Nodes         []PipelineNode `json:"nodes,omitempty"`
 }
 
 type PipelineNode struct {
