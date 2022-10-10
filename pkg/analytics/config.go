@@ -29,4 +29,6 @@ type Config struct {
 	DevicePathPrefix    string `json:"device_path_prefix"`
 	GroupPathPrefix     string `json:"group_path_prefix"`
 	ImportPathPrefix    string `json:"import_path_prefix"`
+
+	RemoveImportPathRoot bool `json:"remove_import_path_root"`
 }

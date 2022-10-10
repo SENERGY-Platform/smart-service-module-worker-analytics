@@ -365,7 +365,14 @@ func (this *Analytics) importSelectionToNodeInputs(token auth.Token, selection m
 	if err != nil {
 		return result, fmt.Errorf("unable to get topic for import (%v): %w", selection.Id, err)
 	}
-	path := this.config.ImportPathPrefix + *selection.Path
+	path := *selection.Path
+	if this.config.RemoveImportPathRoot {
+		_, temp, found := strings.Cut(path, ".")
+		if found {
+			path = temp
+		}
+	}
+	path = this.config.ImportPathPrefix + path
 	return []NodeInput{{
 		FilterIds:  selection.Id,
 		FilterType: ImportFilterType,

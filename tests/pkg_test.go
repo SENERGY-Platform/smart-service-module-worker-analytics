@@ -25,7 +25,6 @@ import (
 	"github.com/SENERGY-Platform/smart-service-module-worker-analytics/tests/mocks"
 	"github.com/SENERGY-Platform/smart-service-module-worker-lib/pkg/configuration"
 	"github.com/SENERGY-Platform/smart-service-module-worker-lib/pkg/model"
-	"io/ioutil"
 	"os"
 	"reflect"
 	"sync"
@@ -122,7 +121,7 @@ func isValidaForMockTest(dir string) bool {
 		"flow_model_cells.json",
 		"expected_engine_requests.json",
 	}
-	infos, err := ioutil.ReadDir(dir)
+	infos, err := os.ReadDir(dir)
 	if err != nil {
 		panic(err)
 	}
@@ -150,7 +149,7 @@ func mockTest(
 	flowengine *mocks.FlowEngine,
 	name string,
 ) {
-	flowModelCellsFile, err := ioutil.ReadFile(RESOURCE_BASE_DIR + name + "/flow_model_cells.json")
+	flowModelCellsFile, err := os.ReadFile(RESOURCE_BASE_DIR + name + "/flow_model_cells.json")
 	if err != nil {
 		t.Error(err)
 		return
@@ -163,7 +162,7 @@ func mockTest(
 	}
 	flowparser.SetResponse(flowModelCells)
 
-	deviceTypeSelectablesFile, err := ioutil.ReadFile(RESOURCE_BASE_DIR + name + "/device_type_selectables.json")
+	deviceTypeSelectablesFile, err := os.ReadFile(RESOURCE_BASE_DIR + name + "/device_type_selectables.json")
 	if err != nil {
 		t.Error(err)
 		return
@@ -176,7 +175,7 @@ func mockTest(
 	}
 	devicerepo.SetResponse(deviceTypeSelectables)
 
-	permissionsQueryResponsesFile, err := ioutil.ReadFile(RESOURCE_BASE_DIR + name + "/permissions_query_responses.json")
+	permissionsQueryResponsesFile, err := os.ReadFile(RESOURCE_BASE_DIR + name + "/permissions_query_responses.json")
 	if err != nil {
 		t.Error(err)
 		return
@@ -189,7 +188,7 @@ func mockTest(
 	}
 	permissions.SetResponse(permissionsQueryResponses)
 
-	expectedCamundaRequestsFile, err := ioutil.ReadFile(RESOURCE_BASE_DIR + name + "/expected_camunda_requests.json")
+	expectedCamundaRequestsFile, err := os.ReadFile(RESOURCE_BASE_DIR + name + "/expected_camunda_requests.json")
 	if err != nil {
 		t.Error(err)
 		return
@@ -201,7 +200,7 @@ func mockTest(
 		return
 	}
 
-	expectedSmartServiceRepoRequestsFile, err := ioutil.ReadFile(RESOURCE_BASE_DIR + name + "/expected_smart_service_repo_requests.json")
+	expectedSmartServiceRepoRequestsFile, err := os.ReadFile(RESOURCE_BASE_DIR + name + "/expected_smart_service_repo_requests.json")
 	if err != nil {
 		t.Error(err)
 		return
@@ -225,7 +224,7 @@ func mockTest(
 		return
 	}
 
-	tasksFile, err := ioutil.ReadFile(RESOURCE_BASE_DIR + name + "/camunda_tasks.json")
+	tasksFile, err := os.ReadFile(RESOURCE_BASE_DIR + name + "/camunda_tasks.json")
 	if err != nil {
 		t.Error(err)
 		return

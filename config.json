@@ -25,5 +25,6 @@
     "enable_multiple_paths": false,
     "device_path_prefix": "value.",
     "group_path_prefix": "value.",
-    "import_path_prefix": ""
+    "import_path_prefix": "",
+    "remove_import_path_root": true
 }
