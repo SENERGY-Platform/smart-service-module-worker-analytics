@@ -55,6 +55,25 @@ func (this *Analytics) getPipelineName(task model.CamundaExternalTask) string {
 	return result
 }
 
+func (this *Analytics) getConsumeAllMessages(task model.CamundaExternalTask) (result bool) {
+	variable, ok := task.Variables[this.config.WorkerParamPrefix+"consume_all_messages"]
+	if !ok {
+		return false
+	}
+	switch v := variable.Value.(type) {
+	case string:
+		err := json.Unmarshal([]byte(v), &result)
+		if err != nil {
+			return false
+		}
+		return result
+	case bool:
+		return v
+	default:
+		return false
+	}
+}
+
 func (this *Analytics) getPipelineWindowTime(task model.CamundaExternalTask) (int, error) {
 	variable, ok := task.Variables[this.config.WorkerParamPrefix+"window_time"]
 	if !ok {
