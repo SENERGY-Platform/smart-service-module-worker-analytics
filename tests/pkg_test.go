@@ -162,6 +162,11 @@ func mockTest(
 	}
 	flowparser.SetResponse(flowModelCells)
 
+	moduleListResponse, err := os.ReadFile(RESOURCE_BASE_DIR + name + "/module_list_response.json")
+	if err == nil {
+		repo.SetListResponse(moduleListResponse)
+	}
+
 	deviceTypeSelectablesFile, err := os.ReadFile(RESOURCE_BASE_DIR + name + "/device_type_selectables.json")
 	if err != nil {
 		t.Error(err)
@@ -241,14 +246,16 @@ func mockTest(
 
 	actualCamundaRequests := camunda.PopRequestLog()
 	if !reflect.DeepEqual(expectedCamundaRequests, actualCamundaRequests) {
-		temp, _ := json.Marshal(actualCamundaRequests)
-		t.Error(string(temp))
+		e, _ := json.Marshal(expectedCamundaRequests)
+		a, _ := json.Marshal(actualCamundaRequests)
+		t.Error("\n", string(e), "\n", string(a))
 	}
 
 	actualSmartServiceRepoRequests := repo.PopRequestLog()
 	if !reflect.DeepEqual(expectedSmartServiceRepoRequests, actualSmartServiceRepoRequests) {
-		temp, _ := json.Marshal(actualSmartServiceRepoRequests)
-		t.Error(string(temp))
+		e, _ := json.Marshal(expectedSmartServiceRepoRequests)
+		a, _ := json.Marshal(actualSmartServiceRepoRequests)
+		t.Error("\n", string(e), "\n", string(a))
 	}
 
 	actualEngineRequests := flowengine.PopRequestLog()

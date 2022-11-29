@@ -21,7 +21,7 @@ import (
 	"encoding/json"
 	"errors"
 	"github.com/SENERGY-Platform/smart-service-module-worker-lib/pkg/auth"
-	"io/ioutil"
+	"io"
 	"log"
 	"net/http"
 	"net/url"
@@ -42,6 +42,47 @@ func (this *Analytics) SendDeployRequest(token auth.Token, request PipelineReque
 	}
 	req, err := http.NewRequest(
 		"POST",
+		this.config.FlowEngineUrl+"/pipeline",
+		bytes.NewBuffer(body),
+	)
+	if err != nil {
+		debug.PrintStack()
+		return result, err, http.StatusInternalServerError
+	}
+	req.Header.Set("Authorization", token.Jwt())
+	req.Header.Set("X-UserId", token.GetUserId())
+	if this.config.Debug {
+		log.Println("DEBUG: send analytics deployment with token:", req.Header.Get("Authorization"))
+	}
+	resp, err := client.Do(req)
+	if err != nil {
+		debug.PrintStack()
+		return result, err, http.StatusInternalServerError
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode >= 300 {
+		debug.PrintStack()
+		return result, errors.New("unexpected statuscode"), resp.StatusCode
+	}
+
+	err = json.NewDecoder(resp.Body).Decode(&result)
+	return result, err, http.StatusOK
+}
+
+func (this *Analytics) SendUpdateRequest(token auth.Token, request PipelineRequest) (result Pipeline, err error, code int) {
+	body, err := json.Marshal(request)
+	if err != nil {
+		return result, err, http.StatusInternalServerError
+	}
+	if this.config.Debug {
+		log.Println("DEBUG: deploy event pipeline", string(body))
+	}
+	client := http.Client{
+		Timeout: 5 * time.Second,
+	}
+	req, err := http.NewRequest(
+		"PUT",
 		this.config.FlowEngineUrl+"/pipeline",
 		bytes.NewBuffer(body),
 	)
@@ -125,7 +166,7 @@ func (this *Analytics) GetFlowInputs(token auth.Token, id string) (result []Flow
 		return result, errors.New("unexpected statuscode"), resp.StatusCode
 	}
 
-	temp, err := ioutil.ReadAll(resp.Body)
+	temp, err := io.ReadAll(resp.Body)
 	err = json.Unmarshal(temp, &result)
 	if err != nil {
 		log.Println("ERROR:", err, string(temp))

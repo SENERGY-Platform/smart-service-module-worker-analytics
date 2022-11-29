@@ -51,6 +51,7 @@ type Imports interface {
 
 type SmartServiceRepo interface {
 	GetInstanceUser(instanceId string) (userId string, err error)
+	ListExistingModules(processInstanceId string, query model.ModulQuery) (result []model.SmartServiceModule, err error)
 }
 
 type Devices interface {
@@ -71,26 +72,27 @@ func (this *Analytics) Do(task model.CamundaExternalTask) (modules []model.Modul
 		return modules, outputs, err
 	}
 
-	analyticsModuleData, analyticsModuleDeleteInfo, outputs, err := this.doAnalytics(token, task)
+	outputs = map[string]interface{}{}
+
+	key := this.getModuleKey(task)
+
+	module, returnData, err := this.handleAnalyticsCommand(token, task, key)
 	if err != nil {
-		return modules, outputs, err
-	}
-	moduleData := this.getModuleData(task)
-	for key, value := range analyticsModuleData {
-		moduleData[key] = value
+		return modules, returnData, err
 	}
 
-	return []model.Module{{
-			Id:               this.getModuleId(task),
-			ProcesInstanceId: task.ProcessInstanceId,
-			SmartServiceModuleInit: model.SmartServiceModuleInit{
-				DeleteInfo: analyticsModuleDeleteInfo,
-				ModuleType: this.libConfig.CamundaWorkerTopic,
-				ModuleData: moduleData,
-			},
-		}},
-		outputs,
-		err
+	moduleData := this.getModuleData(task)
+	for key, value := range module.ModuleData {
+		moduleData[key] = value
+	}
+	module.ModuleData = moduleData
+
+	modules = append(modules, module)
+	for k, v := range returnData {
+		outputs[k] = v
+	}
+
+	return modules, outputs, err
 }
 
 func (this *Analytics) Undo(modules []model.Module, reason error) {
@@ -138,60 +140,122 @@ func (this *Analytics) getModuleId(task model.CamundaExternalTask) string {
 	return task.ProcessInstanceId + "." + task.Id
 }
 
-func (this *Analytics) doAnalytics(token auth.Token, task model.CamundaExternalTask) (moduleData map[string]interface{}, deleteInfo *model.ModuleDeleteInfo, outputs map[string]interface{}, err error) {
+func (this *Analytics) handleAnalyticsCommand(token auth.Token, task model.CamundaExternalTask, key *string) (module model.Module, outputs map[string]interface{}, err error) {
+	if key != nil {
+		return this.handleAnalyticsCommandWithKey(token, task, *key)
+	} else {
+		return this.handleAnalyticsCreate(token, task, []string{})
+	}
+}
+
+func (this *Analytics) handleAnalyticsCommandWithKey(token auth.Token, task model.CamundaExternalTask, key string) (module model.Module, outputs map[string]interface{}, err error) {
+	module, exists, err := this.getExistingModule(task.ProcessInstanceId, key, this.libConfig.CamundaWorkerTopic)
+	if !exists {
+		return this.handleAnalyticsCreate(token, task, []string{key})
+	}
+	setModuleUpdateVersion(&module)
+
+	pipelineIdInterface, ok := module.ModuleData["pipeline_id"]
+	if !ok {
+		log.Printf("WARNING: pipeline-id output not found in module: \n %#v", module)
+		return this.handleAnalyticsCreate(token, task, []string{key})
+	}
+	pipelineId, ok := pipelineIdInterface.(string)
+	if !ok {
+		err = fmt.Errorf("module device-group-id output is not string: \n %#v", module)
+		log.Println("ERROR: ", err)
+		return module, outputs, err
+	}
+	outputs = map[string]interface{}{
+		"pipeline_id": pipelineId,
+	}
+
+	pipelineRequest, err := this.getPipelineRequest(token, task)
+	if err != nil {
+		return module, outputs, err
+	}
+	pipelineRequest.Id = pipelineId
+
+	_, err, _ = this.SendUpdateRequest(token, pipelineRequest)
+	if err != nil {
+		return module, outputs, err
+	}
+	return module, outputs, nil
+}
+
+func (this *Analytics) handleAnalyticsCreate(token auth.Token, task model.CamundaExternalTask, keys []string) (module model.Module, outputs map[string]interface{}, err error) {
+	pipelineRequest, err := this.getPipelineRequest(token, task)
+	if err != nil {
+		return module, outputs, err
+	}
+
+	pipeline, err, _ := this.SendDeployRequest(token, pipelineRequest)
+	if err != nil {
+		return module, outputs, err
+	}
+
+	return model.Module{
+			Id:               this.getModuleId(task),
+			ProcesInstanceId: task.ProcessInstanceId,
+			SmartServiceModuleInit: model.SmartServiceModuleInit{
+				DeleteInfo: &model.ModuleDeleteInfo{
+					Url:    this.config.FlowEngineUrl + "/pipeline/" + url.PathEscape(pipeline.Id.String()),
+					UserId: token.GetUserId(),
+				},
+				ModuleType: this.libConfig.CamundaWorkerTopic,
+				ModuleData: map[string]interface{}{
+					"pipeline_id": pipeline.Id.String(),
+					"pipeline":    pipeline,
+				},
+				Keys: keys,
+			},
+		}, map[string]interface{}{
+			"pipeline_id": pipeline.Id.String(),
+		}, nil
+
+}
+
+func (this *Analytics) getPipelineRequest(token auth.Token, task model.CamundaExternalTask) (pipelineRequest PipelineRequest, err error) {
 	flowId := this.getFlowId(task)
 	if flowId == "" {
 		err = errors.New("missing flow id")
-		return moduleData, deleteInfo, outputs, err
+		return pipelineRequest, err
 	}
 	inputs, err, _ := this.GetFlowInputs(token, flowId)
 	if err != nil {
-		return moduleData, deleteInfo, outputs, err
+		return pipelineRequest, err
 	}
 
-	pipelineRequest := PipelineRequest{
+	pipelineRequest = PipelineRequest{
 		FlowId: flowId,
 	}
 
 	pipelineRequest.Name = this.getPipelineName(task)
 	if pipelineRequest.Name == "" {
 		err = errors.New("missing pipeline name")
-		return moduleData, deleteInfo, outputs, err
+		return pipelineRequest, err
 	}
 
 	pipelineRequest.WindowTime, err = this.getPipelineWindowTime(task)
 	if err != nil {
-		return moduleData, deleteInfo, outputs, err
+		return pipelineRequest, err
 	}
-	
+
 	pipelineRequest.ConsumeAllMessages = this.getConsumeAllMessages(task)
 
 	pipelineRequest.MergeStrategy, err = this.getPipelineMergeStrategy(task)
 	if err != nil {
-		return moduleData, deleteInfo, outputs, err
+		return pipelineRequest, err
 	}
 
 	pipelineRequest.Description = this.getPipelineDescription(task)
 
 	pipelineRequest.Nodes, err = this.inputsToNodes(token, task, inputs)
 	if err != nil {
-		return moduleData, deleteInfo, outputs, err
+		return pipelineRequest, err
 	}
 
-	pipeline, err, _ := this.SendDeployRequest(token, pipelineRequest)
-	if err != nil {
-		return moduleData, deleteInfo, outputs, err
-	}
-
-	return map[string]interface{}{
-			"pipeline": pipeline,
-		}, &model.ModuleDeleteInfo{
-			Url:    this.config.FlowEngineUrl + "/pipeline/" + url.PathEscape(pipeline.Id.String()),
-			UserId: token.GetUserId(),
-		}, map[string]interface{}{
-			"pipeline_id": pipeline.Id.String(),
-		}, nil
-
+	return pipelineRequest, nil
 }
 
 func (this *Analytics) inputsToNodes(token auth.Token, task model.CamundaExternalTask, inputs []FlowModelCell) (result []PipelineNode, err error) {
@@ -385,6 +449,44 @@ func (this *Analytics) importSelectionToNodeInputs(token auth.Token, selection m
 			Path: path,
 		}},
 	}}, nil
+}
+
+func (this *Analytics) getExistingModule(processInstanceId string, key string, moduleType string) (module model.Module, exists bool, err error) {
+	existingModules, err := this.smartServiceRepo.ListExistingModules(processInstanceId, model.ModulQuery{
+		KeyFilter:  &key,
+		TypeFilter: &moduleType,
+	})
+	if err != nil {
+		log.Println("ERROR:", err)
+		return module, false, err
+	}
+	if this.config.Debug {
+		log.Printf("DEBUG: existing module request: %v, %v, %v, \n %#v", processInstanceId, key, moduleType, existingModules)
+	}
+	if len(existingModules) == 0 {
+		return module, false, nil
+	}
+	if len(existingModules) > 1 {
+		log.Printf("WARNING: more than one existing module found: %v, %v, %v, \n %#v", processInstanceId, key, moduleType, existingModules)
+	}
+	module.SmartServiceModuleInit = existingModules[0].SmartServiceModuleInit
+	module.ProcesInstanceId = processInstanceId
+	module.Id = existingModules[0].Id
+	return module, true, nil
+}
+
+const ModuleUpdateVersionField = "module_update_version"
+
+func setModuleUpdateVersion(module *model.Module) {
+	version, versionFieldExists := module.ModuleData[ModuleUpdateVersionField]
+	if !versionFieldExists {
+		module.ModuleData[ModuleUpdateVersionField] = 1
+	}
+	versionNum, versionIsNum := version.(float64)
+	if !versionIsNum {
+		module.ModuleData[ModuleUpdateVersionField] = 1
+	}
+	module.ModuleData[ModuleUpdateVersionField] = versionNum + 1
 }
 
 func ServiceIdToTopic(id string) string {

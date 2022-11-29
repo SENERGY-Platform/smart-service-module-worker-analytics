@@ -7,6 +7,12 @@
 
 ## Camunda-Input-Variables
 
+### Key
+- Desc: identifies module for (later) update
+- Variable-Name-Template: `{{config.WorkerParamPrefix}}.key`
+- Variable-Name-Example: `analytics.key`
+- Value: string
+
 ### Flow-Id
 
 - Desc: defines which flow should be de deployed

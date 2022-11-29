@@ -218,3 +218,16 @@ func (this *Analytics) getNodeCriteria(task model.CamundaExternalTask, inputId s
 	}
 	return result, err
 }
+
+// if no key is set: return nil
+func (this *Analytics) getModuleKey(task model.CamundaExternalTask) (key *string) {
+	variable, ok := task.Variables[this.config.WorkerParamPrefix+"key"]
+	if !ok {
+		return nil
+	}
+	result, ok := variable.Value.(string)
+	if ok {
+		return &result
+	}
+	return nil
+}

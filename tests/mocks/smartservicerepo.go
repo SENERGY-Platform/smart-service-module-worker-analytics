@@ -34,10 +34,11 @@ func NewSmartServiceRepoMock(libConfig configuration.Config, config analytics.Co
 }
 
 type SmartServiceRepoMock struct {
-	requestsLog []Request
-	mux         sync.Mutex
-	libConfig   configuration.Config
-	config      analytics.Config
+	requestsLog        []Request
+	mux                sync.Mutex
+	libConfig          configuration.Config
+	config             analytics.Config
+	moduleListResponse []byte
 }
 
 func (this *SmartServiceRepoMock) PopRequestLog() []Request {
@@ -99,5 +100,20 @@ func (this *SmartServiceRepoMock) getRouter() http.Handler {
 		json.NewEncoder(writer).Encode(userId)
 	})
 
+	router.GET("/instances-by-process-id/:id/modules", func(writer http.ResponseWriter, request *http.Request, params httprouter.Params) {
+		temp, _ := io.ReadAll(request.Body)
+		msg := strings.ReplaceAll(string(temp), this.config.FlowEngineUrl, "http://localhost")
+		this.logRequest(Request{
+			Method:   request.Method,
+			Endpoint: request.URL.Path + "?" + request.URL.Query().Encode(),
+			Message:  msg,
+		})
+		writer.Write(this.moduleListResponse)
+	})
+
 	return router
+}
+
+func (this *SmartServiceRepoMock) SetListResponse(response []byte) {
+	this.moduleListResponse = response
 }

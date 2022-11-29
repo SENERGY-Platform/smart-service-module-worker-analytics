@@ -86,7 +86,7 @@ func (this *FlowEngine) getRouter() http.Handler {
 			writer.WriteHeader(200)
 			return
 		}
-		if request.Method == "POST" && request.URL.Path == "/pipeline" {
+		if (request.Method == "POST" || request.Method == "PUT") && request.URL.Path == "/pipeline" {
 			pipelineRequest := analytics.PipelineRequest{}
 			json.Unmarshal(msg, &pipelineRequest)
 			pipeline := analytics.Pipeline{
