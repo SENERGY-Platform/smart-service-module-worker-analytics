@@ -35,18 +35,6 @@ import (
 const RESOURCE_BASE_DIR = "./test-cases/"
 
 func TestWithMocks(t *testing.T) {
-	wg := &sync.WaitGroup{}
-	defer wg.Wait()
-
-	ctx, cancel := context.WithCancel(context.Background())
-	defer cancel()
-
-	_, _, camunda, repo, devicerepo, permissions, flowparser, flowengine, err := prepareMocks(ctx, wg)
-	if err != nil {
-		t.Error(err)
-		return
-	}
-
 	infos, err := os.ReadDir(RESOURCE_BASE_DIR)
 	if err != nil {
 		t.Error(err)
@@ -56,7 +44,7 @@ func TestWithMocks(t *testing.T) {
 		name := info.Name()
 		if info.IsDir() && isValidaForMockTest(RESOURCE_BASE_DIR+name) {
 			t.Run(name, func(t *testing.T) {
-				mockTest(t, camunda, repo, devicerepo, permissions, flowparser, flowengine, name)
+				mockTest(t, name)
 			})
 		}
 	}
@@ -141,14 +129,20 @@ func isValidaForMockTest(dir string) bool {
 
 func mockTest(
 	t *testing.T,
-	camunda *mocks.CamundaMock,
-	repo *mocks.SmartServiceRepoMock,
-	devicerepo *mocks.DeviceRepo,
-	permissions *mocks.PermissionsSearch,
-	flowparser *mocks.FlowParser,
-	flowengine *mocks.FlowEngine,
 	name string,
 ) {
+	wg := &sync.WaitGroup{}
+	defer wg.Wait()
+
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+
+	_, _, camunda, repo, devicerepo, permissions, flowparser, flowengine, err := prepareMocks(ctx, wg)
+	if err != nil {
+		t.Error(err)
+		return
+	}
+
 	flowModelCellsFile, err := os.ReadFile(RESOURCE_BASE_DIR + name + "/flow_model_cells.json")
 	if err != nil {
 		t.Error(err)
