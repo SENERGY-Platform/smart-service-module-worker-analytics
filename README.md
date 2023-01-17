@@ -1,3 +1,8 @@
+<a href="https://github.com/SENERGY-Platform/smart-service-module-worker-analytics/actions/workflows/tests.yml" rel="nofollow">
+    <img src="https://github.com/SENERGY-Platform/smart-service-module-worker-analytics/actions/workflows/tests.yml/badge.svg?branch=main" alt="Tests" />
+</a>
+
+
 ## Outputs
 
 ### Pipeline-Id
@@ -62,6 +67,14 @@
 - Desc: if a selections does not contain a path (device-group selection), this parameter is needed to find one
 - Variable-Name-Template: `{{config.WorkerParamPrefix}}.criteria.{{inputId}}.{{inputInPort}}`
 - Variable-Name-Example: `analytics.criteria.373808f2-848a-4446-8062-abd973dc96d3.value`
+- Value: json.Marshal([]devices.FilterCriteria{})
+- Value-Example: `[{"function_id": "foo", "aspect_id": "bar"}]`
+
+### Input-IoT-Selection-Service-Criteria
+
+- Desc: additional service filter of the result of Input-IoT-Selection-Criteria.
+- Variable-Name-Template: `{{config.WorkerParamPrefix}}.service_criteria.{{inputId}}.{{inputInPort}}`
+- Variable-Name-Example: `analytics.service_criteria.373808f2-848a-4446-8062-abd973dc96d3.value`
 - Value: json.Marshal([]devices.FilterCriteria{})
 - Value-Example: `[{"function_id": "foo", "aspect_id": "bar"}]`
 

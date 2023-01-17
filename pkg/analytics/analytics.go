@@ -359,7 +359,7 @@ func (this *Analytics) deviceSelectionToNodeInputs(selection model.DeviceSelecti
 }
 
 func (this *Analytics) deviceWithoutServiceSelectionToNodeInputs(token auth.Token, selection model.DeviceSelection, task model.CamundaExternalTask, inputId string, portName string) (result []NodeInput, err error) {
-	criteria, err := this.getNodeCriteria(task, inputId, portName)
+	criteria, err := this.getNodePathCriteria(task, inputId, portName)
 	if err != nil {
 		return result, err
 	}
@@ -367,12 +367,25 @@ func (this *Analytics) deviceWithoutServiceSelectionToNodeInputs(token auth.Toke
 	if err != nil {
 		return result, err
 	}
+
+	serviceCriteria, err := this.getNodeServiceCriteria(task, inputId, portName)
+	if err != nil {
+		return result, err
+	}
+	if len(serviceCriteria) > 0 {
+		filterServiceIds, _, _, err := this.getServicesAndPathsForDeviceIdList(token, []string{selection.DeviceId}, serviceCriteria)
+		if err != nil {
+			return result, err
+		}
+		serviceIds, serviceToDevices, serviceToPaths = filterServices(serviceIds, serviceToDevices, serviceToPaths, filterServiceIds)
+	}
+
 	result = this.serviceInfosToNodeInputs(serviceIds, serviceToDevices, serviceToPaths, portName)
 	return result, nil
 }
 
 func (this *Analytics) groupSelectionToNodeInputs(token auth.Token, selection model.DeviceGroupSelection, task model.CamundaExternalTask, inputId string, portName string) (result []NodeInput, err error) {
-	criteria, err := this.getNodeCriteria(task, inputId, portName)
+	criteria, err := this.getNodePathCriteria(task, inputId, portName)
 	if err != nil {
 		return result, err
 	}
@@ -380,8 +393,47 @@ func (this *Analytics) groupSelectionToNodeInputs(token auth.Token, selection mo
 	if err != nil {
 		return result, err
 	}
+
+	serviceCriteria, err := this.getNodeServiceCriteria(task, inputId, portName)
+	if err != nil {
+		return result, err
+	}
+	if len(serviceCriteria) > 0 {
+		filterServiceIds, _, _, err := this.getServicesAndPathsForGroupSelection(token, selection, serviceCriteria)
+		if err != nil {
+			return result, err
+		}
+		serviceIds, serviceToDevices, serviceToPaths = filterServices(serviceIds, serviceToDevices, serviceToPaths, filterServiceIds)
+	}
+
 	result = this.serviceInfosToNodeInputs(serviceIds, serviceToDevices, serviceToPaths, portName)
 	return result, nil
+}
+
+func filterServices(ids []string, toDevices map[string][]string, paths map[string][]string, filter []string) (serviceIds []string, serviceToDevices map[string][]string, serviceToPath map[string][]string) {
+	serviceIds = []string{}
+	serviceToDevices = map[string][]string{}
+	serviceToPath = map[string][]string{}
+	index := map[string]bool{}
+	for _, id := range filter {
+		index[id] = true
+	}
+	for _, id := range ids {
+		if index[id] {
+			serviceIds = append(serviceIds, id)
+		}
+	}
+	for id, value := range toDevices {
+		if index[id] {
+			serviceToDevices[id] = value
+		}
+	}
+	for id, value := range paths {
+		if index[id] {
+			serviceToPath[id] = value
+		}
+	}
+	return
 }
 
 func (this *Analytics) serviceInfosToNodeInputs(serviceIds []string, serviceToDevices map[string][]string, serviceToPaths map[string][]string, inputPort string) (result []NodeInput) {

@@ -27,15 +27,23 @@ import (
 )
 
 type DeviceRepo struct {
-	requestsLog []Request
-	mux         sync.Mutex
-	Response    []devices.DeviceTypeSelectable
+	requestsLog    []Request
+	mux            sync.Mutex
+	Response       []devices.DeviceTypeSelectable
+	SecondResponse []devices.DeviceTypeSelectable
+	called         bool
 }
 
 func (this *DeviceRepo) SetResponse(value []devices.DeviceTypeSelectable) {
 	this.mux.Lock()
 	defer this.mux.Unlock()
 	this.Response = value
+}
+
+func (this *DeviceRepo) SetSecondResponse(value []devices.DeviceTypeSelectable) {
+	this.mux.Lock()
+	defer this.mux.Unlock()
+	this.SecondResponse = value
 }
 
 func (this *DeviceRepo) PopRequestLog() []Request {
@@ -87,7 +95,12 @@ func (this *DeviceRepo) getRouter() http.Handler {
 	return http.HandlerFunc(func(writer http.ResponseWriter, request *http.Request) {
 		this.logRequest(request)
 		if request.Method == "POST" && request.URL.Path == "/v2/query/device-type-selectables" {
-			json.NewEncoder(writer).Encode(this.Response)
+			if this.called && this.SecondResponse != nil {
+				json.NewEncoder(writer).Encode(this.SecondResponse)
+			} else {
+				json.NewEncoder(writer).Encode(this.Response)
+			}
+			this.called = true
 			return
 		}
 		http.Error(writer, "unknown path", 500)

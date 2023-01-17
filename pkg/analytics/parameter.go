@@ -202,7 +202,7 @@ func (this *Analytics) getSelection(task model.CamundaExternalTask, inputId stri
 	return result, err
 }
 
-func (this *Analytics) getNodeCriteria(task model.CamundaExternalTask, inputId string, portName string) (result []devices.FilterCriteria, err error) {
+func (this *Analytics) getNodePathCriteria(task model.CamundaExternalTask, inputId string, portName string) (result []devices.FilterCriteria, err error) {
 	variableName := this.config.WorkerParamPrefix + "criteria." + inputId + "." + portName
 	variable, ok := task.Variables[variableName]
 	if !ok {
@@ -211,6 +211,26 @@ func (this *Analytics) getNodeCriteria(task model.CamundaExternalTask, inputId s
 	criteriaStr, ok := variable.Value.(string)
 	if !ok {
 		return result, errors.New("unable to interpret pipeline input criteria (" + variableName + ")")
+	}
+	err = json.Unmarshal([]byte(criteriaStr), &result)
+	if err != nil {
+		return result, fmt.Errorf("unable to interpret pipeline input criteria (%v): %w", variableName, err)
+	}
+	return result, err
+}
+
+func (this *Analytics) getNodeServiceCriteria(task model.CamundaExternalTask, inputId string, portName string) (result []devices.FilterCriteria, err error) {
+	variableName := this.config.WorkerParamPrefix + "service_criteria." + inputId + "." + portName
+	variable, ok := task.Variables[variableName]
+	if !ok {
+		return nil, nil
+	}
+	criteriaStr, ok := variable.Value.(string)
+	if !ok {
+		return result, errors.New("unable to interpret pipeline input criteria (" + variableName + ")")
+	}
+	if criteriaStr == "" {
+		return nil, nil
 	}
 	err = json.Unmarshal([]byte(criteriaStr), &result)
 	if err != nil {

@@ -100,7 +100,7 @@ func prepareMocks(ctx context.Context, wg *sync.WaitGroup) (
 }
 
 func isValidaForMockTest(dir string) bool {
-	expectedFiles := []string{
+	return checkFileExistence(dir, []string{
 		"camunda_tasks.json",
 		"expected_camunda_requests.json",
 		"expected_smart_service_repo_requests.json",
@@ -108,7 +108,10 @@ func isValidaForMockTest(dir string) bool {
 		"permissions_query_responses.json",
 		"flow_model_cells.json",
 		"expected_engine_requests.json",
-	}
+	})
+}
+
+func checkFileExistence(dir string, expectedFiles []string) bool {
 	infos, err := os.ReadDir(dir)
 	if err != nil {
 		panic(err)
@@ -173,6 +176,21 @@ func mockTest(
 		return
 	}
 	devicerepo.SetResponse(deviceTypeSelectables)
+
+	if checkFileExistence(RESOURCE_BASE_DIR+name, []string{"device_type_selectables_2.json"}) {
+		deviceTypeSelectablesFile2, err := os.ReadFile(RESOURCE_BASE_DIR + name + "/device_type_selectables_2.json")
+		if err != nil {
+			t.Error(err)
+			return
+		}
+		var deviceTypeSelectables2 []devices.DeviceTypeSelectable
+		err = json.Unmarshal(deviceTypeSelectablesFile2, &deviceTypeSelectables2)
+		if err != nil {
+			t.Error(err)
+			return
+		}
+		devicerepo.SetSecondResponse(deviceTypeSelectables2)
+	}
 
 	permissionsQueryResponsesFile, err := os.ReadFile(RESOURCE_BASE_DIR + name + "/permissions_query_responses.json")
 	if err != nil {
