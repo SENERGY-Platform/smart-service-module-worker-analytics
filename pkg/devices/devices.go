@@ -23,7 +23,9 @@ import (
 	"github.com/SENERGY-Platform/smart-service-module-worker-lib/pkg/auth"
 	"log"
 	"net/http"
+	"net/url"
 	"runtime/debug"
+	"strconv"
 )
 
 type Devices struct {
@@ -99,13 +101,16 @@ func (this *Devices) GetDevicesWithIds(token auth.Token, ids []string) (result [
 	return
 }
 
-func (this *Devices) GetDeviceTypeSelectables(token auth.Token, criteria []FilterCriteria) (result []DeviceTypeSelectable, err error) {
+func (this *Devices) GetDeviceTypeSelectables(token auth.Token, criteria []FilterCriteria, includeModified bool, servicesMustMatchAllCriteria bool) (result []DeviceTypeSelectable, err error) {
 	requestBody := new(bytes.Buffer)
 	err = json.NewEncoder(requestBody).Encode(criteria)
 	if err != nil {
 		return result, err
 	}
-	req, err := http.NewRequest("POST", this.deviceRepositoryUrl+"/v2/query/device-type-selectables", requestBody)
+	query := url.Values{}
+	query.Set("services_must_match_all_criteria", strconv.FormatBool(servicesMustMatchAllCriteria))
+	query.Set("include_id_modified", strconv.FormatBool(includeModified))
+	req, err := http.NewRequest("POST", this.deviceRepositoryUrl+"/v2/query/device-type-selectables?"+query.Encode(), requestBody)
 	if err != nil {
 		debug.PrintStack()
 		return result, err

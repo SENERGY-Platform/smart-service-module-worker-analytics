@@ -77,7 +77,7 @@ func (this *Analytics) getDeviceGroupPathOptions(token auth.Token, criteria []de
 		}
 		criteria[i] = c
 	}
-	selectables, err := this.devices.GetDeviceTypeSelectables(token, criteria)
+	selectables, err := this.devices.GetDeviceTypeSelectables(token, criteria, true, true)
 	if err != nil {
 		return result, err
 	}

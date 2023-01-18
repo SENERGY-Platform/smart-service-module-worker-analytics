@@ -57,7 +57,7 @@ type SmartServiceRepo interface {
 type Devices interface {
 	GetDeviceInfosOfGroup(token auth.Token, groupId string) (devices []devices.Device, deviceTypeIds []string, err error)
 	GetDeviceInfosOfDevices(token auth.Token, deviceIds []string) (devices []devices.Device, deviceTypeIds []string, err error)
-	GetDeviceTypeSelectables(token auth.Token, criteria []devices.FilterCriteria) (result []devices.DeviceTypeSelectable, err error)
+	GetDeviceTypeSelectables(token auth.Token, criteria []devices.FilterCriteria, includeModified bool, servicesMustMatchAllCriteria bool) (result []devices.DeviceTypeSelectable, err error)
 }
 
 func (this *Analytics) Do(task model.CamundaExternalTask) (modules []model.Module, outputs map[string]interface{}, err error) {
