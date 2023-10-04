@@ -54,8 +54,8 @@ github.com/SENERGY-Platform/models/go v0.0.0-20230824080159-16585960df38 h1:PDvF
 github.com/SENERGY-Platform/models/go v0.0.0-20230824080159-16585960df38/go.mod h1:bCREPNRN4P8oxLgpC3/ZKK4jXSy4MSPXoiomhohE+aw=
 github.com/SENERGY-Platform/permission-search v0.0.0-20230829121111-76c8c176bddb h1:AQ/VBfoQFSmY+pqWVTXtrBsgjvOdpSlRFj/a6ftwtck=
 github.com/SENERGY-Platform/permission-search v0.0.0-20230829121111-76c8c176bddb/go.mod h1:TxlFzRwUfDp9gordsK5dehq83AYDavt2876ElMP9n/E=
-github.com/SENERGY-Platform/smart-service-module-worker-lib v0.0.0-20230901100545-2cefca17f038 h1:aXL2QuiehkwM2Ik7698isUfuqPxVMnpEyxj2JBVgRTc=
-github.com/SENERGY-Platform/smart-service-module-worker-lib v0.0.0-20230901100545-2cefca17f038/go.mod h1:2SHuq6K00j5iy1So5BtnZULRULguyrtkampgIiqrolc=
+github.com/SENERGY-Platform/smart-service-module-worker-lib v0.0.0-20231004093826-f0f2ad3f11a3 h1:CJYet28ELn+Axiqz/fvfg4BZ2EqGM2t5TjoNk79rfMQ=
+github.com/SENERGY-Platform/smart-service-module-worker-lib v0.0.0-20231004093826-f0f2ad3f11a3/go.mod h1:g+1IGgCHtXa4YVU9+sKTjNNgq91MlX/xllmMjF7aKXs=
 github.com/acobaugh/osrelease v0.1.0 h1:Yb59HQDGGNhCj4suHaFQQfBps5wyoKLSSX/J/+UifRE=
 github.com/acobaugh/osrelease v0.1.0/go.mod h1:4bFEs0MtgHNHBrmHCt67gNisnabCRAlzdVasCEGHTWY=
 github.com/aws/aws-sdk-go v1.42.27/go.mod h1:OGr6lGMAKGlG9CVrYnWYDKIyb829c6EVBRjxqjmPepc=

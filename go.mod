@@ -5,7 +5,7 @@ go 1.21
 toolchain go1.21.0
 
 require (
-	github.com/SENERGY-Platform/smart-service-module-worker-lib v0.0.0-20230901100545-2cefca17f038
+	github.com/SENERGY-Platform/smart-service-module-worker-lib v0.0.0-20231004093826-f0f2ad3f11a3
 	github.com/julienschmidt/httprouter v1.3.0
 	github.com/satori/go.uuid v1.2.0
 )
