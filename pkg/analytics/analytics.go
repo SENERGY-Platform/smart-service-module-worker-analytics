@@ -336,7 +336,7 @@ func (this *Analytics) selectionToNodeInputs(token auth.Token, selection model.I
 	if selection.DeviceGroupSelection != nil {
 		return this.groupSelectionToNodeInputs(token, *selection.DeviceGroupSelection, task, inputId, portName)
 	}
-	return result, errors.New("expect selection to contain none nil value")
+	return []NodeInput{}, nil
 }
 
 func (this *Analytics) deviceSelectionToNodeInputs(selection model.DeviceSelection, inputPort string) (result []NodeInput, err error) {
