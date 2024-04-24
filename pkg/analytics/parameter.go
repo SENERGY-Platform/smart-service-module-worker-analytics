@@ -196,10 +196,7 @@ func (this *Analytics) getSelection(task model.CamundaExternalTask, inputId stri
 	if err != nil {
 		return result, fmt.Errorf("unable to interpret pipeline input selection (%v): %w", variableName, err)
 	}
-	if result.DeviceSelection == nil && result.ImportSelection == nil && result.DeviceGroupSelection == nil {
-		return result, fmt.Errorf("unable to interpret pipeline input selection (%v): %v", variableName, "expect selection to contain none nil value")
-	}
-	return result, err
+	return result, nil
 }
 
 func (this *Analytics) getNodePathCriteria(task model.CamundaExternalTask, inputId string, portName string) (result []devices.FilterCriteria, err error) {

@@ -281,6 +281,9 @@ func (this *Analytics) inputsToNodes(token auth.Token, task model.CamundaExterna
 			if err != nil {
 				return result, err
 			}
+			if selection.DeviceSelection == nil && selection.ImportSelection == nil && selection.DeviceGroupSelection == nil {
+				continue
+			}
 			nodeInput, err := this.selectionToNodeInputs(token, selection, task, input.Id, port)
 			if err != nil {
 				return result, err
@@ -336,7 +339,7 @@ func (this *Analytics) selectionToNodeInputs(token auth.Token, selection model.I
 	if selection.DeviceGroupSelection != nil {
 		return this.groupSelectionToNodeInputs(token, *selection.DeviceGroupSelection, task, inputId, portName)
 	}
-	return []NodeInput{}, nil
+	return result, errors.New("expect selection to contain none nil value")
 }
 
 func (this *Analytics) deviceSelectionToNodeInputs(selection model.DeviceSelection, inputPort string) (result []NodeInput, err error) {
