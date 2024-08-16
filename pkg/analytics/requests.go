@@ -29,6 +29,8 @@ import (
 	"time"
 )
 
+var DefaultTimeout = 30 * time.Second
+
 func (this *Analytics) SendDeployRequest(token auth.Token, request PipelineRequest) (result Pipeline, err error, code int) {
 	body, err := json.Marshal(request)
 	if err != nil {
@@ -38,7 +40,7 @@ func (this *Analytics) SendDeployRequest(token auth.Token, request PipelineReque
 		log.Println("DEBUG: deploy event pipeline", string(body))
 	}
 	client := http.Client{
-		Timeout: 5 * time.Second,
+		Timeout: DefaultTimeout,
 	}
 	req, err := http.NewRequest(
 		"POST",
@@ -79,7 +81,7 @@ func (this *Analytics) SendUpdateRequest(token auth.Token, request PipelineReque
 		log.Println("DEBUG: deploy event pipeline", string(body))
 	}
 	client := http.Client{
-		Timeout: 5 * time.Second,
+		Timeout: DefaultTimeout,
 	}
 	req, err := http.NewRequest(
 		"PUT",
@@ -113,7 +115,7 @@ func (this *Analytics) SendUpdateRequest(token auth.Token, request PipelineReque
 
 func (this *Analytics) Remove(token auth.Token, pipelineId string) error {
 	client := http.Client{
-		Timeout: 5 * time.Second,
+		Timeout: DefaultTimeout,
 	}
 	req, err := http.NewRequest(
 		"DELETE",
@@ -141,7 +143,7 @@ func (this *Analytics) Remove(token auth.Token, pipelineId string) error {
 
 func (this *Analytics) GetFlowInputs(token auth.Token, id string) (result []FlowModelCell, err error, code int) {
 	client := http.Client{
-		Timeout: 5 * time.Second,
+		Timeout: DefaultTimeout,
 	}
 	req, err := http.NewRequest(
 		"GET",
