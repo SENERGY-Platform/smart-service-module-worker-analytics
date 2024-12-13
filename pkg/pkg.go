@@ -37,7 +37,7 @@ func Start(ctx context.Context, wg *sync.WaitGroup, config analytics.Config, lib
 			auth,
 			smartServiceRepo,
 			imports.New(config.ImportDeployUrl),
-			devices.New(config.DeviceRepositoryUrl, config.PermSearchUrl),
+			devices.New(config.DeviceRepositoryUrl),
 		), nil
 	}
 	return lib.Start(ctx, wg, libConfig, handlerFactory)

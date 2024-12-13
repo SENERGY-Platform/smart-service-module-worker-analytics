@@ -20,6 +20,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"errors"
+	"github.com/SENERGY-Platform/device-repository/lib/client"
 	"github.com/SENERGY-Platform/smart-service-module-worker-lib/pkg/auth"
 	"log"
 	"net/http"
@@ -30,11 +31,10 @@ import (
 
 type Devices struct {
 	deviceRepositoryUrl string
-	permSearchUrl       string
 }
 
-func New(deviceRepositoryUrl string, permSearchUrl string) *Devices {
-	return &Devices{deviceRepositoryUrl: deviceRepositoryUrl, permSearchUrl: permSearchUrl}
+func New(deviceRepositoryUrl string) *Devices {
+	return &Devices{deviceRepositoryUrl: deviceRepositoryUrl}
 }
 
 func (this *Devices) GetDeviceInfosOfGroup(token auth.Token, groupId string) (devices []Device, deviceTypeIds []string, err error) {
@@ -61,44 +61,35 @@ func (this *Devices) GetDeviceInfosOfDevices(token auth.Token, deviceIds []strin
 }
 
 func (this *Devices) GetDeviceGroup(token auth.Token, groupId string) (result DeviceGroup, err error) {
-	groups := []DeviceGroup{}
-	err, _ = this.Search(token, QueryMessage{
-		Resource: "device-groups",
-		ListIds: &QueryListIds{
-			QueryListCommons: QueryListCommons{
-				Limit:    1,
-				Offset:   0,
-				Rights:   "r",
-				SortBy:   "name",
-				SortDesc: false,
-			},
-			Ids: []string{groupId},
-		},
-	}, &groups)
+	dg, err, _ := client.NewClient(this.deviceRepositoryUrl).ReadDeviceGroup(groupId, token.Jwt(), false)
 	if err != nil {
 		return result, err
 	}
-	if len(groups) == 0 {
-		return result, errors.New("not found")
-	}
-	return groups[0], nil
+	return DeviceGroup{
+		Id:        dg.Id,
+		Name:      dg.Name,
+		DeviceIds: dg.DeviceIds,
+	}, nil
 }
 
 func (this *Devices) GetDevicesWithIds(token auth.Token, ids []string) (result []Device, err error) {
-	err, _ = this.Search(token, QueryMessage{
-		Resource: "devices",
-		ListIds: &QueryListIds{
-			QueryListCommons: QueryListCommons{
-				Limit:    len(ids),
-				Offset:   0,
-				Rights:   "r",
-				SortBy:   "name",
-				SortDesc: false,
-			},
-			Ids: ids,
-		},
-	}, &result)
-	return
+	device, err, _ := client.NewClient(this.deviceRepositoryUrl).ListDevices(token.Jwt(), client.DeviceListOptions{
+		Ids:    ids,
+		Limit:  int64(len(ids)),
+		Offset: 0,
+		SortBy: "name.asc",
+	})
+	if err != nil {
+		return result, err
+	}
+	for _, d := range device {
+		result = append(result, Device{
+			Id:           d.Id,
+			Name:         d.Name,
+			DeviceTypeId: d.DeviceTypeId,
+		})
+	}
+	return result, nil
 }
 
 func (this *Devices) GetDeviceTypeSelectables(token auth.Token, criteria []FilterCriteria, includeModified bool, servicesMustMatchAllCriteria bool) (result []DeviceTypeSelectable, err error) {

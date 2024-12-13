@@ -27,14 +27,15 @@ import (
 )
 
 type DeviceRepo struct {
-	requestsLog    []Request
-	mux            sync.Mutex
-	Response       []devices.DeviceTypeSelectable
-	SecondResponse []devices.DeviceTypeSelectable
-	called         bool
+	requestsLog     []Request
+	mux             sync.Mutex
+	Response        []devices.DeviceTypeSelectable
+	SecondResponse  []devices.DeviceTypeSelectable
+	legacyResponses map[string]interface{}
+	called          bool
 }
 
-func (this *DeviceRepo) SetResponse(value []devices.DeviceTypeSelectable) {
+func (this *DeviceRepo) SetDeviceTypeSelectablesResponse(value []devices.DeviceTypeSelectable) {
 	this.mux.Lock()
 	defer this.mux.Unlock()
 	this.Response = value
@@ -81,6 +82,9 @@ func (this *DeviceRepo) logRequestWithMessage(request *http.Request, m interface
 }
 
 func (this *DeviceRepo) Start(ctx context.Context, wg *sync.WaitGroup) (url string) {
+	if this.legacyResponses == nil {
+		this.legacyResponses = map[string]interface{}{}
+	}
 	server := httptest.NewServer(this.getRouter())
 	wg.Add(1)
 	go func() {
@@ -103,6 +107,23 @@ func (this *DeviceRepo) getRouter() http.Handler {
 			this.called = true
 			return
 		}
-		http.Error(writer, "unknown path", 500)
+		if resp, ok := this.legacyResponses[request.URL.Path]; ok {
+			json.NewEncoder(writer).Encode(resp)
+			return
+		}
+		http.Error(writer, "unknown path "+request.URL.Path, 500)
 	})
+}
+
+func (this *DeviceRepo) SetLegacyPermissionsResponses(responses map[string][]map[string]interface{}) {
+	this.legacyResponses = map[string]interface{}{}
+	for k, v := range responses {
+		this.legacyResponses["/"+k] = v
+		for _, e := range v {
+			id, ok := e["id"].(string)
+			if ok {
+				this.legacyResponses["/"+k+"/"+id] = e
+			}
+		}
+	}
 }

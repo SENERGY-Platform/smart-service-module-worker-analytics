@@ -56,7 +56,6 @@ func prepareMocks(ctx context.Context, wg *sync.WaitGroup) (
 	camunda *mocks.CamundaMock,
 	smartServiceRepo *mocks.SmartServiceRepoMock,
 	devicerepo *mocks.DeviceRepo,
-	permissions *mocks.PermissionsSearch,
 	flowparser *mocks.FlowParser,
 	flowengine *mocks.FlowEngine,
 	err error,
@@ -81,9 +80,6 @@ func prepareMocks(ctx context.Context, wg *sync.WaitGroup) (
 
 	imports := &mocks.Import{}
 	conf.ImportDeployUrl = imports.Start(ctx, wg)
-
-	permissions = &mocks.PermissionsSearch{}
-	conf.PermSearchUrl = permissions.Start(ctx, wg)
 
 	flowparser = &mocks.FlowParser{}
 	conf.FlowParserUrl = flowparser.Start(ctx, wg)
@@ -140,7 +136,7 @@ func mockTest(
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
-	_, _, camunda, repo, devicerepo, permissions, flowparser, flowengine, err := prepareMocks(ctx, wg)
+	_, _, camunda, repo, devicerepo, flowparser, flowengine, err := prepareMocks(ctx, wg)
 	if err != nil {
 		t.Error(err)
 		return
@@ -175,7 +171,7 @@ func mockTest(
 		t.Error(err)
 		return
 	}
-	devicerepo.SetResponse(deviceTypeSelectables)
+	devicerepo.SetDeviceTypeSelectablesResponse(deviceTypeSelectables)
 
 	if checkFileExistence(RESOURCE_BASE_DIR+name, []string{"device_type_selectables_2.json"}) {
 		deviceTypeSelectablesFile2, err := os.ReadFile(RESOURCE_BASE_DIR + name + "/device_type_selectables_2.json")
@@ -197,13 +193,13 @@ func mockTest(
 		t.Error(err)
 		return
 	}
-	var permissionsQueryResponses map[string]interface{}
+	var permissionsQueryResponses map[string][]map[string]interface{}
 	err = json.Unmarshal(permissionsQueryResponsesFile, &permissionsQueryResponses)
 	if err != nil {
 		t.Error(err)
 		return
 	}
-	permissions.SetResponse(permissionsQueryResponses)
+	devicerepo.SetLegacyPermissionsResponses(permissionsQueryResponses)
 
 	expectedCamundaRequestsFile, err := os.ReadFile(RESOURCE_BASE_DIR + name + "/expected_camunda_requests.json")
 	if err != nil {

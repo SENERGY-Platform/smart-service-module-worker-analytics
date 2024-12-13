@@ -21,7 +21,6 @@ type Config struct {
 	FlowEngineUrl       string `json:"flow_engine_url"`
 	FlowParserUrl       string `json:"flow_parser_url"`
 	ImportDeployUrl     string `json:"import_deploy_url"`
-	PermSearchUrl       string `json:"perm_search_url"`
 	DeviceRepositoryUrl string `json:"device_repository_url"`
 	Debug               bool   `json:"debug"`
 
