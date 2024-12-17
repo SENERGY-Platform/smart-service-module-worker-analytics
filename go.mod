@@ -5,8 +5,8 @@ go 1.23
 toolchain go1.23.3
 
 require (
-	github.com/SENERGY-Platform/device-repository v0.1.50
-	github.com/SENERGY-Platform/smart-service-module-worker-lib v0.0.0-20241202070750-f1c57b1c4358
+	github.com/SENERGY-Platform/device-repository v0.1.51
+	github.com/SENERGY-Platform/smart-service-module-worker-lib v0.0.0-20241217111518-1ee731d87aa0
 	github.com/julienschmidt/httprouter v1.3.0
 	github.com/satori/go.uuid v1.2.0
 )
