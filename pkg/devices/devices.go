@@ -61,7 +61,7 @@ func (this *Devices) GetDeviceInfosOfDevices(token auth.Token, deviceIds []strin
 }
 
 func (this *Devices) GetDeviceGroup(token auth.Token, groupId string) (result DeviceGroup, err error) {
-	dg, err, _ := client.NewClient(this.deviceRepositoryUrl).ReadDeviceGroup(groupId, token.Jwt(), false)
+	dg, err, _ := client.NewClient(this.deviceRepositoryUrl, nil).ReadDeviceGroup(groupId, token.Jwt(), false)
 	if err != nil {
 		return result, err
 	}
@@ -73,7 +73,7 @@ func (this *Devices) GetDeviceGroup(token auth.Token, groupId string) (result De
 }
 
 func (this *Devices) GetDevicesWithIds(token auth.Token, ids []string) (result []Device, err error) {
-	device, err, _ := client.NewClient(this.deviceRepositoryUrl).ListDevices(token.Jwt(), client.DeviceListOptions{
+	device, err, _ := client.NewClient(this.deviceRepositoryUrl, nil).ListDevices(token.Jwt(), client.DeviceListOptions{
 		Ids:    ids,
 		Limit:  int64(len(ids)),
 		Offset: 0,
