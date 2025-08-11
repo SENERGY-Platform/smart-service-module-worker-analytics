@@ -20,13 +20,13 @@ import (
 	"bytes"
 	"encoding/json"
 	"errors"
-	"github.com/SENERGY-Platform/smart-service-module-worker-lib/pkg/auth"
 	"io"
-	"log"
 	"net/http"
 	"net/url"
 	"runtime/debug"
 	"time"
+
+	"github.com/SENERGY-Platform/smart-service-module-worker-lib/pkg/auth"
 )
 
 var DefaultTimeout = 30 * time.Second
@@ -36,9 +36,7 @@ func (this *Analytics) SendDeployRequest(token auth.Token, request PipelineReque
 	if err != nil {
 		return result, err, http.StatusInternalServerError
 	}
-	if this.config.Debug {
-		log.Println("DEBUG: deploy event pipeline", string(body))
-	}
+	this.config.GetLogger().Debug("deploy event pipeline", "request", string(body))
 	client := http.Client{
 		Timeout: DefaultTimeout,
 	}
@@ -48,24 +46,23 @@ func (this *Analytics) SendDeployRequest(token auth.Token, request PipelineReque
 		bytes.NewBuffer(body),
 	)
 	if err != nil {
-		debug.PrintStack()
+		this.config.GetLogger().Error("error in SendDeployRequest", "error", err, "stack", string(debug.Stack()))
 		return result, err, http.StatusInternalServerError
 	}
 	req.Header.Set("Authorization", token.Jwt())
 	req.Header.Set("X-UserId", token.GetUserId())
-	if this.config.Debug {
-		log.Println("DEBUG: send analytics deployment with token:", req.Header.Get("Authorization"))
-	}
+	this.config.GetLogger().Debug("send analytics deployment with token", "token", req.Header.Get("Authorization"))
 	resp, err := client.Do(req)
 	if err != nil {
-		debug.PrintStack()
+		this.config.GetLogger().Error("error in SendDeployRequest", "error", err, "stack", string(debug.Stack()))
 		return result, err, http.StatusInternalServerError
 	}
 	defer resp.Body.Close()
 
 	if resp.StatusCode >= 300 {
-		debug.PrintStack()
-		return result, errors.New("unexpected statuscode"), resp.StatusCode
+		err = errors.New("unexpected statuscode")
+		this.config.GetLogger().Error("error in SendDeployRequest", "error", err, "stack", string(debug.Stack()), "statuscode", resp.StatusCode)
+		return result, err, resp.StatusCode
 	}
 
 	err = json.NewDecoder(resp.Body).Decode(&result)
@@ -77,9 +74,7 @@ func (this *Analytics) SendUpdateRequest(token auth.Token, request PipelineReque
 	if err != nil {
 		return result, err, http.StatusInternalServerError
 	}
-	if this.config.Debug {
-		log.Println("DEBUG: deploy event pipeline", string(body))
-	}
+	this.config.GetLogger().Debug("deploy event pipeline", "request", string(body))
 	client := http.Client{
 		Timeout: DefaultTimeout,
 	}
@@ -94,19 +89,18 @@ func (this *Analytics) SendUpdateRequest(token auth.Token, request PipelineReque
 	}
 	req.Header.Set("Authorization", token.Jwt())
 	req.Header.Set("X-UserId", token.GetUserId())
-	if this.config.Debug {
-		log.Println("DEBUG: send analytics deployment with token:", req.Header.Get("Authorization"))
-	}
+	this.config.GetLogger().Debug("send analytics deployment update with token", "token", req.Header.Get("Authorization"))
 	resp, err := client.Do(req)
 	if err != nil {
-		debug.PrintStack()
+		this.config.GetLogger().Error("error in SendDeployRequest", "error", err, "stack", string(debug.Stack()))
 		return result, err, http.StatusInternalServerError
 	}
 	defer resp.Body.Close()
 
 	if resp.StatusCode >= 300 {
-		debug.PrintStack()
-		return result, errors.New("unexpected statuscode"), resp.StatusCode
+		err = errors.New("unexpected statuscode")
+		this.config.GetLogger().Error("error in SendDeployRequest", "error", err, "stack", string(debug.Stack()), "statuscode", resp.StatusCode)
+		return result, err, resp.StatusCode
 	}
 
 	err = json.NewDecoder(resp.Body).Decode(&result)
@@ -123,20 +117,21 @@ func (this *Analytics) Remove(token auth.Token, pipelineId string) error {
 		nil,
 	)
 	if err != nil {
-		debug.PrintStack()
+		this.config.GetLogger().Error("error in Remove", "error", err, "stack", string(debug.Stack()))
 		return err
 	}
 	req.Header.Set("Authorization", token.Jwt())
 	req.Header.Set("X-UserId", token.GetUserId())
 	resp, err := client.Do(req)
 	if err != nil {
-		debug.PrintStack()
+		this.config.GetLogger().Error("error in Remove", "error", err, "stack", string(debug.Stack()))
 		return err
 	}
 	defer resp.Body.Close()
 	if resp.StatusCode >= 300 {
-		debug.PrintStack()
-		return errors.New("unexpected statuscode")
+		err = errors.New("unexpected statuscode")
+		this.config.GetLogger().Error("error in Remove", "error", err, "stack", string(debug.Stack()), "statuscode", resp.StatusCode)
+		return err
 	}
 	return nil
 }
@@ -151,28 +146,28 @@ func (this *Analytics) GetFlowInputs(token auth.Token, id string) (result []Flow
 		nil,
 	)
 	if err != nil {
-		debug.PrintStack()
+		this.config.GetLogger().Error("error in GetFlowInputs", "error", err, "stack", string(debug.Stack()))
 		return result, err, http.StatusInternalServerError
 	}
 	req.Header.Set("Authorization", token.Jwt())
 	req.Header.Set("X-UserId", token.GetUserId())
 	resp, err := client.Do(req)
 	if err != nil {
-		debug.PrintStack()
+		this.config.GetLogger().Error("error in GetFlowInputs", "error", err, "stack", string(debug.Stack()))
 		return result, err, http.StatusInternalServerError
 	}
 	defer resp.Body.Close()
 
 	if resp.StatusCode >= 300 {
-		debug.PrintStack()
-		return result, errors.New("unexpected statuscode"), resp.StatusCode
+		err = errors.New("unexpected statuscode")
+		this.config.GetLogger().Error("error in GetFlowInputs", "error", err, "stack", string(debug.Stack()), "statuscode", resp.StatusCode)
+		return result, err, resp.StatusCode
 	}
 
 	temp, err := io.ReadAll(resp.Body)
 	err = json.Unmarshal(temp, &result)
 	if err != nil {
-		log.Println("ERROR:", err, string(temp))
-		debug.PrintStack()
+		this.config.GetLogger().Error("error in GetFlowInputs", "error", err, "stack", string(debug.Stack()), "payload", string(temp))
 		return result, err, http.StatusInternalServerError
 	}
 	return result, err, http.StatusOK

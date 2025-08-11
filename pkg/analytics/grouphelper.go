@@ -20,7 +20,6 @@ import (
 	"github.com/SENERGY-Platform/smart-service-module-worker-analytics/pkg/devices"
 	"github.com/SENERGY-Platform/smart-service-module-worker-lib/pkg/auth"
 	"github.com/SENERGY-Platform/smart-service-module-worker-lib/pkg/model"
-	"log"
 )
 
 func (this *Analytics) getServicesAndPathsForGroupSelection(token auth.Token, selection model.DeviceGroupSelection, criteria []devices.FilterCriteria) (serviceIds []string, serviceToDevices map[string][]string, serviceToPath map[string][]string, err error) {
@@ -42,7 +41,7 @@ func (this *Analytics) getServicesAndPathsForDeviceIdList(token auth.Token, devi
 func (this *Analytics) getServicesAndPathsForDevices(token auth.Token, deviceList []devices.Device, deviceTypeIds []string, criteria []devices.FilterCriteria) (serviceIds []string, serviceToDevices map[string][]string, serviceToPath map[string][]string, err error) {
 	options, err := this.getDeviceGroupPathOptions(token, criteria, deviceTypeIds)
 	if err != nil {
-		log.Println("ERROR: unable to find path options", err)
+		this.config.GetLogger().Error("unable to find path options", "error", err)
 		return nil, nil, nil, err
 	}
 	serviceIds = []string{}
@@ -79,6 +78,7 @@ func (this *Analytics) getDeviceGroupPathOptions(token auth.Token, criteria []de
 	}
 	selectables, err := this.devices.GetDeviceTypeSelectables(token, criteria, true, true)
 	if err != nil {
+		this.config.GetLogger().Error("unable to find device type selectables", "error", err)
 		return result, err
 	}
 	for _, dtId := range deviceTypeIds {
@@ -95,7 +95,7 @@ func (this *Analytics) getDeviceGroupPathOptions(token auth.Token, criteria []de
 							temp.JsonPath = append(temp.JsonPath, option.Path)
 							temp.PathToCharacteristicId[option.Path] = option.CharacteristicId
 						} else {
-							log.Println("WARNING: unexpected service id in ServicePathOptions")
+							this.config.GetLogger().Warn("unexpected service id in ServicePathOptions")
 						}
 					}
 					result[dtId] = append(result[dtId], temp)
