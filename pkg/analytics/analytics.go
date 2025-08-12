@@ -63,12 +63,12 @@ type Devices interface {
 func (this *Analytics) Do(task model.CamundaExternalTask) (modules []model.Module, outputs map[string]interface{}, err error) {
 	userId, err := this.smartServiceRepo.GetInstanceUser(task.ProcessInstanceId)
 	if err != nil {
-		this.config.GetLogger().Error("unable to get instance user", "error", err)
+		this.libConfig.GetLogger().Error("unable to get instance user", "error", err)
 		return modules, outputs, err
 	}
 	token, err := this.auth.ExchangeUserToken(userId)
 	if err != nil {
-		this.config.GetLogger().Error("unable to exchange user token", "error", err)
+		this.libConfig.GetLogger().Error("unable to exchange user token", "error", err)
 		return modules, outputs, err
 	}
 
@@ -96,12 +96,12 @@ func (this *Analytics) Do(task model.CamundaExternalTask) (modules []model.Modul
 }
 
 func (this *Analytics) Undo(modules []model.Module, reason error) {
-	this.config.GetLogger().Debug("undo", "reason", reason)
+	this.libConfig.GetLogger().Debug("undo", "reason", reason)
 	for _, module := range modules {
 		if module.DeleteInfo != nil {
 			err := this.useModuleDeleteInfo(*module.DeleteInfo)
 			if err != nil {
-				this.config.GetLogger().Error("error in useModuleDeleteInfo", "error", err, "stack", string(debug.Stack()))
+				this.libConfig.GetLogger().Error("error in useModuleDeleteInfo", "error", err, "stack", string(debug.Stack()))
 			}
 		}
 	}
@@ -127,7 +127,7 @@ func (this *Analytics) useModuleDeleteInfo(info model.ModuleDeleteInfo) error {
 	if resp.StatusCode >= 300 && resp.StatusCode != http.StatusNotFound {
 		temp, _ := io.ReadAll(resp.Body)
 		err = fmt.Errorf("unexpected response: %v, %v", resp.StatusCode, string(temp))
-		this.config.GetLogger().Error("error in useModuleDeleteInfo", "error", err, "stack", string(debug.Stack()))
+		this.libConfig.GetLogger().Error("error in useModuleDeleteInfo", "error", err, "stack", string(debug.Stack()))
 		return err
 	}
 	_, _ = io.ReadAll(resp.Body)
@@ -155,13 +155,13 @@ func (this *Analytics) handleAnalyticsCommandWithKey(token auth.Token, task mode
 
 	pipelineIdInterface, ok := module.ModuleData["pipeline_id"]
 	if !ok {
-		this.config.GetLogger().Warn("pipeline-id output not found in module", "module", module)
+		this.libConfig.GetLogger().Warn("pipeline-id output not found in module", "module", module)
 		return this.handleAnalyticsCreate(token, task, []string{key})
 	}
 	pipelineId, ok := pipelineIdInterface.(string)
 	if !ok {
 		err = fmt.Errorf("module device-group-id output is not string: \n %#v", module)
-		this.config.GetLogger().Error("module device-group-id output is not string", "module", module, "error", err)
+		this.libConfig.GetLogger().Error("module device-group-id output is not string", "module", module, "error", err)
 		return module, outputs, err
 	}
 	outputs = map[string]interface{}{
@@ -441,12 +441,12 @@ func (this *Analytics) serviceInfosToNodeInputs(serviceIds []string, serviceToDe
 	for _, serviceId := range serviceIds {
 		deviceIds := strings.Join(serviceToDevices[serviceId], ",")
 		if deviceIds == "" {
-			this.config.GetLogger().Warn("missing deviceIds for service in serviceInfosToNodeInputs() --> skip service", "serviceId", serviceId)
+			this.libConfig.GetLogger().Warn("missing deviceIds for service in serviceInfosToNodeInputs() --> skip service", "serviceId", serviceId)
 			continue
 		}
 		paths := serviceToPaths[serviceId]
 		if len(paths) == 0 {
-			this.config.GetLogger().Warn("missing path for service in serviceInfosToNodeInputs() --> skip service", "serviceId", serviceId)
+			this.libConfig.GetLogger().Warn("missing path for service in serviceInfosToNodeInputs() --> skip service", "serviceId", serviceId)
 			continue
 		}
 		values := []NodeValue{}
@@ -510,15 +510,15 @@ func (this *Analytics) getExistingModule(processInstanceId string, key string, m
 		TypeFilter: &moduleType,
 	})
 	if err != nil {
-		this.config.GetLogger().Error("error in getExistingModule", "error", err)
+		this.libConfig.GetLogger().Error("error in getExistingModule", "error", err)
 		return module, false, err
 	}
-	this.config.GetLogger().Debug("existing module request", "processInstanceId", processInstanceId, "key", key, "moduleType", moduleType, "existingModules", existingModules)
+	this.libConfig.GetLogger().Debug("existing module request", "processInstanceId", processInstanceId, "key", key, "moduleType", moduleType, "existingModules", existingModules)
 	if len(existingModules) == 0 {
 		return module, false, nil
 	}
 	if len(existingModules) > 1 {
-		this.config.GetLogger().Warn("more than one existing module found", "processInstanceId", processInstanceId, "key", key, "moduleType", moduleType, "existingModules", existingModules)
+		this.libConfig.GetLogger().Warn("more than one existing module found", "processInstanceId", processInstanceId, "key", key, "moduleType", moduleType, "existingModules", existingModules)
 	}
 	module.SmartServiceModuleInit = existingModules[0].SmartServiceModuleInit
 	module.ProcesInstanceId = processInstanceId

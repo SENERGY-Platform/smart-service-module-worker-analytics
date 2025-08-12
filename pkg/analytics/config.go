@@ -16,14 +16,6 @@
 
 package analytics
 
-import (
-	"log/slog"
-	"os"
-	"time"
-
-	struct_logger "github.com/SENERGY-Platform/go-service-base/struct-logger"
-)
-
 type Config struct {
 	WorkerParamPrefix   string `json:"worker_param_prefix"`
 	FlowEngineUrl       string `json:"flow_engine_url"`
@@ -38,25 +30,4 @@ type Config struct {
 	ImportPathPrefix    string `json:"import_path_prefix"`
 
 	RemoveImportPathRoot bool `json:"remove_import_path_root"`
-
-	LogLevel string `json:"log_level"`
-
-	logger *slog.Logger `json:"-"`
-}
-
-func (this *Config) GetLogger() *slog.Logger {
-	if this.logger == nil {
-		this.logger = struct_logger.New(
-			struct_logger.Config{
-				Handler:    struct_logger.JsonHandlerSelector,
-				Level:      this.LogLevel,
-				TimeFormat: time.RFC3339Nano,
-				TimeUtc:    true,
-				AddMeta:    true,
-			},
-			os.Stdout,
-			"",
-			"smart-service-module-worker-analytics").With("project-group", "smart-service")
-	}
-	return this.logger
 }
