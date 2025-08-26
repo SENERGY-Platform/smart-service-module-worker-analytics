@@ -6,8 +6,7 @@ toolchain go1.24.6
 
 require (
 	github.com/SENERGY-Platform/device-repository v0.2.27
-	github.com/SENERGY-Platform/go-service-base/struct-logger v0.4.1
-	github.com/SENERGY-Platform/smart-service-module-worker-lib v0.0.0-20250812092418-dd1d78d97121
+	github.com/SENERGY-Platform/smart-service-module-worker-lib v0.0.0-20250826124800-822d514cda3d
 	github.com/julienschmidt/httprouter v1.3.0
 	github.com/satori/go.uuid v1.2.0
 )
@@ -15,6 +14,7 @@ require (
 require (
 	github.com/KyleBanks/depth v1.2.1 // indirect
 	github.com/SENERGY-Platform/developer-notifications v0.0.4 // indirect
+	github.com/SENERGY-Platform/go-service-base/struct-logger v0.4.1 // indirect
 	github.com/SENERGY-Platform/models/go v0.0.0-20241007061544-de7132ae94e4 // indirect
 	github.com/SENERGY-Platform/permissions-v2 v0.0.38 // indirect
 	github.com/SENERGY-Platform/service-commons v0.0.0-20250707072258-a5b49118c926 // indirect
