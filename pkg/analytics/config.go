@@ -30,4 +30,6 @@ type Config struct {
 	ImportPathPrefix    string `json:"import_path_prefix"`
 
 	RemoveImportPathRoot bool `json:"remove_import_path_root"`
+
+	HealthCheckInterval string `json:"health_check_interval"`
 }

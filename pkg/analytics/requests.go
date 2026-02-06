@@ -20,6 +20,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"io"
 	"net/http"
 	"net/url"
@@ -134,6 +135,35 @@ func (this *Analytics) Remove(token auth.Token, pipelineId string) error {
 		return err
 	}
 	return nil
+}
+
+func (this *Analytics) CheckPipeline(token auth.Token, pipelineId string) (code int, err error) {
+	client := http.Client{
+		Timeout: DefaultTimeout,
+	}
+	req, err := http.NewRequest(
+		"GET",
+		this.config.FlowEngineUrl+"/pipeline/"+url.PathEscape(pipelineId),
+		nil,
+	)
+	if err != nil {
+		this.libConfig.GetLogger().Error("error in CheckPipeline", "error", err, "stack", string(debug.Stack()))
+		return http.StatusInternalServerError, err
+	}
+	req.Header.Set("Authorization", token.Jwt())
+	req.Header.Set("X-UserId", token.GetUserId())
+	resp, err := client.Do(req)
+	if err != nil {
+		this.libConfig.GetLogger().Error("error in CheckPipeline", "error", err, "stack", string(debug.Stack()))
+		return http.StatusInternalServerError, err
+	}
+	defer resp.Body.Close()
+	if resp.StatusCode >= 300 {
+		pl, _ := io.ReadAll(resp.Body)
+		err = fmt.Errorf("unexpected statuscode while checking pipeline %v: %v, %v", pipelineId, resp.StatusCode, string(pl))
+		return code, err
+	}
+	return resp.StatusCode, nil
 }
 
 func (this *Analytics) GetFlowInputs(token auth.Token, id string) (result []FlowModelCell, err error, code int) {
