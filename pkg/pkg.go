@@ -59,12 +59,15 @@ func Start(ctx context.Context, wg *sync.WaitGroup, config analytics.Config, lib
 			if !ok {
 				return nil, fmt.Errorf("missing string pipeline_id in module data")
 			}
-			code, err := handler.CheckPipeline(token, pipelineId)
+			state, code, err := handler.CheckPipeline(token, pipelineId)
 			if err != nil {
 				if code >= http.StatusInternalServerError {
 					return nil, err
 				}
 				return err, nil
+			}
+			if !state.Running {
+				return fmt.Errorf("pipeline not running"), nil
 			}
 			return nil, nil
 		})

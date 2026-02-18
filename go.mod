@@ -3,8 +3,8 @@ module github.com/SENERGY-Platform/smart-service-module-worker-analytics
 go 1.25.0
 
 require (
-	github.com/SENERGY-Platform/device-repository v0.2.38
-	github.com/SENERGY-Platform/smart-service-module-worker-lib v0.0.0-20260217100825-68e8d5d75823
+	github.com/SENERGY-Platform/device-repository v0.2.39
+	github.com/SENERGY-Platform/smart-service-module-worker-lib v0.0.0-20260218122011-e961fa55a9bf
 	github.com/julienschmidt/httprouter v1.3.0
 	github.com/satori/go.uuid v1.2.0
 )
@@ -14,7 +14,7 @@ require (
 	github.com/SENERGY-Platform/developer-notifications v0.0.4 // indirect
 	github.com/SENERGY-Platform/go-service-base/struct-logger v0.6.0 // indirect
 	github.com/SENERGY-Platform/models/go v0.0.0-20251202070403-e7e5579f7111 // indirect
-	github.com/SENERGY-Platform/permissions-v2 v0.0.40 // indirect
+	github.com/SENERGY-Platform/permissions-v2 v0.0.41 // indirect
 	github.com/SENERGY-Platform/service-commons v0.0.0-20260106114257-16bca4ba28e7 // indirect
 	github.com/dlclark/regexp2 v1.11.0 // indirect
 	github.com/dop251/goja v0.0.0-20240627195025-eb1f15ee67d2 // indirect
