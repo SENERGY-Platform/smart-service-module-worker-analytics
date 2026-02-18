@@ -155,14 +155,14 @@ func (this *Analytics) CheckPipeline(token auth.Token, pipelineId string) (state
 	)
 	if err != nil {
 		this.libConfig.GetLogger().Error("error in CheckPipeline", "error", err, "stack", string(debug.Stack()))
-		return state, http.StatusInternalServerError, err
+		return state, 0, err
 	}
 	req.Header.Set("Authorization", token.Jwt())
 	req.Header.Set("X-UserId", token.GetUserId())
 	resp, err := client.Do(req)
 	if err != nil {
 		this.libConfig.GetLogger().Error("error in CheckPipeline", "error", err, "stack", string(debug.Stack()))
-		return state, http.StatusInternalServerError, err
+		return state, 0, err
 	}
 	defer resp.Body.Close()
 	if resp.StatusCode >= 300 {

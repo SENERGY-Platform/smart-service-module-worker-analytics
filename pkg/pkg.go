@@ -19,7 +19,6 @@ package pkg
 import (
 	"context"
 	"fmt"
-	"net/http"
 	"sync"
 	"time"
 
@@ -61,7 +60,7 @@ func Start(ctx context.Context, wg *sync.WaitGroup, config analytics.Config, lib
 			}
 			state, code, err := handler.CheckPipeline(token, pipelineId)
 			if err != nil {
-				if code >= http.StatusInternalServerError {
+				if code == 0 {
 					return nil, err
 				}
 				return err, nil
