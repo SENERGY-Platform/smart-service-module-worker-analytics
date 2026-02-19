@@ -159,6 +159,9 @@ func (this *Analytics) CheckPipeline(token auth.Token, pipelineId string) (state
 	}
 	req.Header.Set("Authorization", token.Jwt())
 	req.Header.Set("X-UserId", token.GetUserId())
+
+	this.libConfig.GetLogger().Debug("check pipeline request", "url", req.URL.String(), "method", req.Method, "token", req.Header.Get("Authorization"), "xuser", req.Header.Get("X-UserId"))
+
 	resp, err := client.Do(req)
 	if err != nil {
 		this.libConfig.GetLogger().Error("error in CheckPipeline", "error", err, "stack", string(debug.Stack()))
