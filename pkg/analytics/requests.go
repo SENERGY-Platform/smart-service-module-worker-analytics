@@ -168,7 +168,7 @@ func (this *Analytics) CheckPipeline(token auth.Token, pipelineId string) (state
 	if resp.StatusCode >= 300 {
 		pl, _ := io.ReadAll(resp.Body)
 		err = fmt.Errorf("unexpected statuscode while checking pipeline %v: %v, %v", pipelineId, resp.StatusCode, string(pl))
-		return state, code, err
+		return state, resp.StatusCode, err
 	}
 	return state, resp.StatusCode, nil
 }
