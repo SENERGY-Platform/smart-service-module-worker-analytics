@@ -173,6 +173,10 @@ func (this *Analytics) CheckPipeline(token auth.Token, pipelineId string) (state
 		err = fmt.Errorf("unexpected statuscode while checking pipeline %v: %v, %v", pipelineId, resp.StatusCode, string(pl))
 		return state, resp.StatusCode, err
 	}
+	err = json.NewDecoder(resp.Body).Decode(&state)
+	if err != nil {
+		return state, 0, err
+	}
 	return state, resp.StatusCode, nil
 }
 
