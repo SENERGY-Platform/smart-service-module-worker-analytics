@@ -47,9 +47,8 @@ func Start(ctx context.Context, wg *sync.WaitGroup, config analytics.Config, lib
 		if err != nil {
 			return nil, err
 		}
-		smartServiceRepo.StartHealthCheck(ctx, interval, model.ModulQuery{
-			TypeFilter: &libConfig.CamundaWorkerTopic,
-		}, func(module model.SmartServiceModule) (health error, err error) {
+
+		healthCheck := func(module model.SmartServiceModule) (health error, err error) {
 			token, err := auth.ExchangeUserToken(module.UserId)
 			if err != nil {
 				return nil, err
@@ -69,7 +68,10 @@ func Start(ctx context.Context, wg *sync.WaitGroup, config analytics.Config, lib
 				return fmt.Errorf("pipeline not running"), nil
 			}
 			return nil, nil
-		})
+		}
+		moduleQuery := model.ModulQuery{TypeFilter: &libConfig.CamundaWorkerTopic}
+		smartServiceRepo.StartHealthCheck(ctx, interval, moduleQuery, healthCheck) //timer loop
+		smartServiceRepo.RunHealthCheck(moduleQuery, healthCheck)                  //initial check
 		return handler, nil
 	}
 	return lib.Start(ctx, wg, libConfig, handlerFactory)

@@ -4,7 +4,7 @@ go 1.25.0
 
 require (
 	github.com/SENERGY-Platform/device-repository v0.2.39
-	github.com/SENERGY-Platform/smart-service-module-worker-lib v0.0.0-20260218122011-e961fa55a9bf
+	github.com/SENERGY-Platform/smart-service-module-worker-lib v0.0.0-20260219070518-4891938fc134
 	github.com/julienschmidt/httprouter v1.3.0
 	github.com/satori/go.uuid v1.2.0
 )
