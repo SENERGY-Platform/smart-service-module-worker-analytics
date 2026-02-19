@@ -33,6 +33,26 @@ import (
 	"github.com/SENERGY-Platform/smart-service-module-worker-lib/pkg/smartservicerepository"
 )
 
+func getPipelineId(moduleData map[string]interface{}) (string, error) {
+	pipelineId, ok := moduleData["pipeline_id"].(string)
+	if ok {
+		return pipelineId, nil
+	}
+	pipeline, ok := moduleData["pipeline"]
+	if !ok {
+		return "", fmt.Errorf("missing pipeline_id or pipeline in module data")
+	}
+	pipelineObj, ok := pipeline.(map[string]interface{})
+	if !ok {
+		return "", fmt.Errorf("invalid pipeline in module data")
+	}
+	pipelineId, ok = pipelineObj["id"].(string)
+	if !ok {
+		return "", fmt.Errorf("invalid pipeline in module data (id is not string)")
+	}
+	return pipelineId, nil
+}
+
 func Start(ctx context.Context, wg *sync.WaitGroup, config analytics.Config, libConfig configuration.Config) error {
 	handlerFactory := func(auth *auth.Auth, smartServiceRepo *smartservicerepository.SmartServiceRepository) (camunda.Handler, error) {
 		handler := analytics.New(
@@ -53,9 +73,9 @@ func Start(ctx context.Context, wg *sync.WaitGroup, config analytics.Config, lib
 			if err != nil {
 				return nil, err
 			}
-			pipelineId, ok := module.ModuleData["pipeline_id"].(string)
-			if !ok {
-				return nil, fmt.Errorf("missing string pipeline_id in module data")
+			pipelineId, err := getPipelineId(module.ModuleData)
+			if err != nil {
+				return nil, err
 			}
 			state, code, err := handler.CheckPipeline(token, pipelineId)
 			if err != nil {
