@@ -27,5 +27,6 @@
     "import_path_prefix": "",
     "remove_import_path_root": false,
 
-    "health_check_interval": "1h"
+    "health_check_interval": "1h",
+    "fetch_retries": 5
 }

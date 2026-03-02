@@ -3,8 +3,8 @@ module github.com/SENERGY-Platform/smart-service-module-worker-analytics
 go 1.25.0
 
 require (
-	github.com/SENERGY-Platform/device-repository v0.2.39
-	github.com/SENERGY-Platform/smart-service-module-worker-lib v0.0.0-20260220084951-145508c11b87
+	github.com/SENERGY-Platform/device-repository v0.2.40
+	github.com/SENERGY-Platform/smart-service-module-worker-lib v0.0.0-20260302073741-e7f1bb7c9def
 	github.com/julienschmidt/httprouter v1.3.0
 	github.com/satori/go.uuid v1.2.0
 )
