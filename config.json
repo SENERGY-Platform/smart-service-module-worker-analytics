@@ -1,4 +1,5 @@
 {
+  "otel_endpoint": "",
     "debug": false,
     "smart_service_repository_url": "",
     "flow_engine_url": "",

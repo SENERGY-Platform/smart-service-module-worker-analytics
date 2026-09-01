@@ -17,8 +17,10 @@
 package imports
 
 import (
+	"context"
 	"encoding/json"
 	"errors"
+	"github.com/SENERGY-Platform/gin-middleware/otelx"
 	"github.com/SENERGY-Platform/smart-service-module-worker-lib/pkg/auth"
 	"io"
 	"net/http"
@@ -33,8 +35,12 @@ func New(importDeployUrl string) *Imports {
 	return &Imports{importDeployUrl: importDeployUrl}
 }
 
-func (this *Imports) GetTopic(token auth.Token, importId string) (topic string, err error) {
+func (this *Imports) GetTopic(ctx context.Context, token auth.Token, importId string) (topic string, err error) {
 	req, err := http.NewRequest("GET", this.importDeployUrl+"/instances/"+url.PathEscape(importId), nil)
+	if err != nil {
+		return "", err
+	}
+	err = otelx.InjectContextToRequest(ctx, req)
 	if err != nil {
 		return "", err
 	}

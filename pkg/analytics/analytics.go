@@ -17,6 +17,7 @@
 package analytics
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"io"
@@ -26,6 +27,7 @@ import (
 	"sort"
 	"strings"
 
+	"github.com/SENERGY-Platform/gin-middleware/otelx"
 	"github.com/SENERGY-Platform/smart-service-module-worker-analytics/pkg/devices"
 	"github.com/SENERGY-Platform/smart-service-module-worker-lib/pkg/auth"
 	"github.com/SENERGY-Platform/smart-service-module-worker-lib/pkg/configuration"
@@ -46,29 +48,29 @@ type Analytics struct {
 }
 
 type Imports interface {
-	GetTopic(token auth.Token, importId string) (topic string, err error)
+	GetTopic(ctx context.Context, token auth.Token, importId string) (topic string, err error)
 }
 
 type SmartServiceRepo interface {
-	GetInstanceUser(instanceId string) (userId string, err error)
-	ListExistingModules(processInstanceId string, query model.ModulQuery) (result []model.SmartServiceModule, err error)
+	GetInstanceUser(ctx context.Context, instanceId string) (userId string, err error)
+	ListExistingModules(ctx context.Context, processInstanceId string, query model.ModulQuery) (result []model.SmartServiceModule, err error)
 }
 
 type Devices interface {
-	GetDeviceInfosOfGroup(token auth.Token, groupId string) (devices []devices.Device, deviceTypeIds []string, err error)
-	GetDeviceInfosOfDevices(token auth.Token, deviceIds []string) (devices []devices.Device, deviceTypeIds []string, err error)
-	GetDeviceTypeSelectables(token auth.Token, criteria []devices.FilterCriteria, includeModified bool, servicesMustMatchAllCriteria bool) (result []devices.DeviceTypeSelectable, err error)
+	GetDeviceInfosOfGroup(ctx context.Context, token auth.Token, groupId string) (devices []devices.Device, deviceTypeIds []string, err error)
+	GetDeviceInfosOfDevices(ctx context.Context, token auth.Token, deviceIds []string) (devices []devices.Device, deviceTypeIds []string, err error)
+	GetDeviceTypeSelectables(ctx context.Context, token auth.Token, criteria []devices.FilterCriteria, includeModified bool, servicesMustMatchAllCriteria bool) (result []devices.DeviceTypeSelectable, err error)
 }
 
-func (this *Analytics) Do(task model.CamundaExternalTask) (modules []model.Module, outputs map[string]interface{}, err error) {
-	userId, err := this.smartServiceRepo.GetInstanceUser(task.ProcessInstanceId)
+func (this *Analytics) Do(ctx context.Context, task model.CamundaExternalTask) (modules []model.Module, outputs map[string]interface{}, err error) {
+	userId, err := this.smartServiceRepo.GetInstanceUser(ctx, task.ProcessInstanceId)
 	if err != nil {
-		this.libConfig.GetLogger().Error("unable to get instance user", "error", err)
+		this.libConfig.GetLogger().ErrorContext(ctx, "unable to get instance user", "error", err)
 		return modules, outputs, err
 	}
 	token, err := this.auth.ExchangeUserToken(userId)
 	if err != nil {
-		this.libConfig.GetLogger().Error("unable to exchange user token", "error", err)
+		this.libConfig.GetLogger().ErrorContext(ctx, "unable to exchange user token", "error", err)
 		return modules, outputs, err
 	}
 
@@ -76,7 +78,7 @@ func (this *Analytics) Do(task model.CamundaExternalTask) (modules []model.Modul
 
 	key := this.getModuleKey(task)
 
-	module, returnData, err := this.handleAnalyticsCommand(token, task, key)
+	module, returnData, err := this.handleAnalyticsCommand(ctx, token, task, key)
 	if err != nil {
 		return modules, returnData, err
 	}
@@ -95,20 +97,24 @@ func (this *Analytics) Do(task model.CamundaExternalTask) (modules []model.Modul
 	return modules, outputs, err
 }
 
-func (this *Analytics) Undo(modules []model.Module, reason error) {
-	this.libConfig.GetLogger().Debug("undo", "reason", reason)
+func (this *Analytics) Undo(ctx context.Context, modules []model.Module, reason error) {
+	this.libConfig.GetLogger().DebugContext(ctx, "undo", "reason", reason)
 	for _, module := range modules {
 		if module.DeleteInfo != nil {
-			err := this.useModuleDeleteInfo(*module.DeleteInfo)
+			err := this.useModuleDeleteInfo(ctx, *module.DeleteInfo)
 			if err != nil {
-				this.libConfig.GetLogger().Error("error in useModuleDeleteInfo", "error", err, "stack", string(debug.Stack()))
+				this.libConfig.GetLogger().ErrorContext(ctx, "error in useModuleDeleteInfo", "error", err, "stack", string(debug.Stack()))
 			}
 		}
 	}
 }
 
-func (this *Analytics) useModuleDeleteInfo(info model.ModuleDeleteInfo) error {
+func (this *Analytics) useModuleDeleteInfo(ctx context.Context, info model.ModuleDeleteInfo) error {
 	req, err := http.NewRequest("DELETE", info.Url, nil)
+	if err != nil {
+		return err
+	}
+	err = otelx.InjectContextToRequest(ctx, req)
 	if err != nil {
 		return err
 	}
@@ -127,7 +133,7 @@ func (this *Analytics) useModuleDeleteInfo(info model.ModuleDeleteInfo) error {
 	if resp.StatusCode >= 300 && resp.StatusCode != http.StatusNotFound {
 		temp, _ := io.ReadAll(resp.Body)
 		err = fmt.Errorf("unexpected response: %v, %v", resp.StatusCode, string(temp))
-		this.libConfig.GetLogger().Error("error in useModuleDeleteInfo", "error", err, "stack", string(debug.Stack()))
+		this.libConfig.GetLogger().ErrorContext(ctx, "error in useModuleDeleteInfo", "error", err, "stack", string(debug.Stack()))
 		return err
 	}
 	_, _ = io.ReadAll(resp.Body)
@@ -138,56 +144,56 @@ func (this *Analytics) getModuleId(task model.CamundaExternalTask) string {
 	return task.ProcessInstanceId + "." + task.Id
 }
 
-func (this *Analytics) handleAnalyticsCommand(token auth.Token, task model.CamundaExternalTask, key *string) (module model.Module, outputs map[string]interface{}, err error) {
+func (this *Analytics) handleAnalyticsCommand(ctx context.Context, token auth.Token, task model.CamundaExternalTask, key *string) (module model.Module, outputs map[string]interface{}, err error) {
 	if key != nil {
-		return this.handleAnalyticsCommandWithKey(token, task, *key)
+		return this.handleAnalyticsCommandWithKey(ctx, token, task, *key)
 	} else {
-		return this.handleAnalyticsCreate(token, task, []string{})
+		return this.handleAnalyticsCreate(ctx, token, task, []string{})
 	}
 }
 
-func (this *Analytics) handleAnalyticsCommandWithKey(token auth.Token, task model.CamundaExternalTask, key string) (module model.Module, outputs map[string]interface{}, err error) {
-	module, exists, err := this.getExistingModule(task.ProcessInstanceId, key, this.libConfig.CamundaWorkerTopic)
+func (this *Analytics) handleAnalyticsCommandWithKey(ctx context.Context, token auth.Token, task model.CamundaExternalTask, key string) (module model.Module, outputs map[string]interface{}, err error) {
+	module, exists, err := this.getExistingModule(ctx, task.ProcessInstanceId, key, this.libConfig.CamundaWorkerTopic)
 	if !exists {
-		return this.handleAnalyticsCreate(token, task, []string{key})
+		return this.handleAnalyticsCreate(ctx, token, task, []string{key})
 	}
 	setModuleUpdateVersion(&module)
 
 	pipelineIdInterface, ok := module.ModuleData["pipeline_id"]
 	if !ok {
-		this.libConfig.GetLogger().Warn("pipeline-id output not found in module", "module", module)
-		return this.handleAnalyticsCreate(token, task, []string{key})
+		this.libConfig.GetLogger().WarnContext(ctx, "pipeline-id output not found in module", "module", module)
+		return this.handleAnalyticsCreate(ctx, token, task, []string{key})
 	}
 	pipelineId, ok := pipelineIdInterface.(string)
 	if !ok {
 		err = fmt.Errorf("module device-group-id output is not string: \n %#v", module)
-		this.libConfig.GetLogger().Error("module device-group-id output is not string", "module", module, "error", err)
+		this.libConfig.GetLogger().ErrorContext(ctx, "module device-group-id output is not string", "module", module, "error", err)
 		return module, outputs, err
 	}
 	outputs = map[string]interface{}{
 		"pipeline_id": pipelineId,
 	}
 
-	pipelineRequest, err := this.getPipelineRequest(token, task)
+	pipelineRequest, err := this.getPipelineRequest(ctx, token, task)
 	if err != nil {
 		return module, outputs, err
 	}
 	pipelineRequest.Id = pipelineId
 
-	_, err, _ = this.SendUpdateRequest(token, pipelineRequest)
+	_, err, _ = this.SendUpdateRequest(ctx, token, pipelineRequest)
 	if err != nil {
 		return module, outputs, err
 	}
 	return module, outputs, nil
 }
 
-func (this *Analytics) handleAnalyticsCreate(token auth.Token, task model.CamundaExternalTask, keys []string) (module model.Module, outputs map[string]interface{}, err error) {
-	pipelineRequest, err := this.getPipelineRequest(token, task)
+func (this *Analytics) handleAnalyticsCreate(ctx context.Context, token auth.Token, task model.CamundaExternalTask, keys []string) (module model.Module, outputs map[string]interface{}, err error) {
+	pipelineRequest, err := this.getPipelineRequest(ctx, token, task)
 	if err != nil {
 		return module, outputs, err
 	}
 
-	pipeline, err, _ := this.SendDeployRequest(token, pipelineRequest)
+	pipeline, err, _ := this.SendDeployRequest(ctx, token, pipelineRequest)
 	if err != nil {
 		return module, outputs, err
 	}
@@ -213,13 +219,13 @@ func (this *Analytics) handleAnalyticsCreate(token auth.Token, task model.Camund
 
 }
 
-func (this *Analytics) getPipelineRequest(token auth.Token, task model.CamundaExternalTask) (pipelineRequest PipelineRequest, err error) {
+func (this *Analytics) getPipelineRequest(ctx context.Context, token auth.Token, task model.CamundaExternalTask) (pipelineRequest PipelineRequest, err error) {
 	flowId := this.getFlowId(task)
 	if flowId == "" {
 		err = errors.New("missing flow id")
 		return pipelineRequest, err
 	}
-	inputs, err, _ := this.GetFlowInputs(token, flowId)
+	inputs, err, _ := this.GetFlowInputs(ctx, token, flowId)
 	if err != nil {
 		return pipelineRequest, err
 	}
@@ -248,7 +254,7 @@ func (this *Analytics) getPipelineRequest(token auth.Token, task model.CamundaEx
 
 	pipelineRequest.Description = this.getPipelineDescription(task)
 
-	pipelineRequest.Nodes, err = this.inputsToNodes(token, task, inputs)
+	pipelineRequest.Nodes, err = this.inputsToNodes(ctx, token, task, inputs)
 	if err != nil {
 		return pipelineRequest, err
 	}
@@ -256,7 +262,7 @@ func (this *Analytics) getPipelineRequest(token auth.Token, task model.CamundaEx
 	return pipelineRequest, nil
 }
 
-func (this *Analytics) inputsToNodes(token auth.Token, task model.CamundaExternalTask, inputs []FlowModelCell) (result []PipelineNode, err error) {
+func (this *Analytics) inputsToNodes(ctx context.Context, token auth.Token, task model.CamundaExternalTask, inputs []FlowModelCell) (result []PipelineNode, err error) {
 	for _, input := range inputs {
 		node := PipelineNode{
 			NodeId:      input.Id,
@@ -282,7 +288,7 @@ func (this *Analytics) inputsToNodes(token auth.Token, task model.CamundaExterna
 			if selection.DeviceSelection == nil && selection.ImportSelection == nil && selection.DeviceGroupSelection == nil {
 				continue
 			}
-			nodeInput, err := this.selectionToNodeInputs(token, selection, task, input.Id, port)
+			nodeInput, err := this.selectionToNodeInputs(ctx, token, selection, task, input.Id, port)
 			if err != nil {
 				return result, err
 			}
@@ -324,18 +330,18 @@ func groupInputs(in []NodeInput) (out []NodeInput) {
 	return out
 }
 
-func (this *Analytics) selectionToNodeInputs(token auth.Token, selection model.IotOption, task model.CamundaExternalTask, inputId string, portName string) (result []NodeInput, err error) {
+func (this *Analytics) selectionToNodeInputs(ctx context.Context, token auth.Token, selection model.IotOption, task model.CamundaExternalTask, inputId string, portName string) (result []NodeInput, err error) {
 	if selection.DeviceSelection != nil {
 		if selection.DeviceSelection.ServiceId == nil {
-			return this.deviceWithoutServiceSelectionToNodeInputs(token, *selection.DeviceSelection, task, inputId, portName)
+			return this.deviceWithoutServiceSelectionToNodeInputs(ctx, token, *selection.DeviceSelection, task, inputId, portName)
 		}
 		return this.deviceSelectionToNodeInputs(*selection.DeviceSelection, portName)
 	}
 	if selection.ImportSelection != nil {
-		return this.importSelectionToNodeInputs(token, *selection.ImportSelection, portName)
+		return this.importSelectionToNodeInputs(ctx, token, *selection.ImportSelection, portName)
 	}
 	if selection.DeviceGroupSelection != nil {
-		return this.groupSelectionToNodeInputs(token, *selection.DeviceGroupSelection, task, inputId, portName)
+		return this.groupSelectionToNodeInputs(ctx, token, *selection.DeviceGroupSelection, task, inputId, portName)
 	}
 	return result, errors.New("expect selection to contain none nil value")
 }
@@ -359,12 +365,12 @@ func (this *Analytics) deviceSelectionToNodeInputs(selection model.DeviceSelecti
 	}}, nil
 }
 
-func (this *Analytics) deviceWithoutServiceSelectionToNodeInputs(token auth.Token, selection model.DeviceSelection, task model.CamundaExternalTask, inputId string, portName string) (result []NodeInput, err error) {
+func (this *Analytics) deviceWithoutServiceSelectionToNodeInputs(ctx context.Context, token auth.Token, selection model.DeviceSelection, task model.CamundaExternalTask, inputId string, portName string) (result []NodeInput, err error) {
 	criteria, err := this.getNodePathCriteria(task, inputId, portName)
 	if err != nil {
 		return result, err
 	}
-	serviceIds, serviceToDevices, serviceToPaths, err := this.getServicesAndPathsForDeviceIdList(token, []string{selection.DeviceId}, criteria)
+	serviceIds, serviceToDevices, serviceToPaths, err := this.getServicesAndPathsForDeviceIdList(ctx, token, []string{selection.DeviceId}, criteria)
 	if err != nil {
 		return result, err
 	}
@@ -374,23 +380,23 @@ func (this *Analytics) deviceWithoutServiceSelectionToNodeInputs(token auth.Toke
 		return result, err
 	}
 	if len(serviceCriteria) > 0 {
-		filterServiceIds, _, _, err := this.getServicesAndPathsForDeviceIdList(token, []string{selection.DeviceId}, serviceCriteria)
+		filterServiceIds, _, _, err := this.getServicesAndPathsForDeviceIdList(ctx, token, []string{selection.DeviceId}, serviceCriteria)
 		if err != nil {
 			return result, err
 		}
 		serviceIds, serviceToDevices, serviceToPaths = filterServices(serviceIds, serviceToDevices, serviceToPaths, filterServiceIds)
 	}
 
-	result = this.serviceInfosToNodeInputs(serviceIds, serviceToDevices, serviceToPaths, portName)
+	result = this.serviceInfosToNodeInputs(ctx, serviceIds, serviceToDevices, serviceToPaths, portName)
 	return result, nil
 }
 
-func (this *Analytics) groupSelectionToNodeInputs(token auth.Token, selection model.DeviceGroupSelection, task model.CamundaExternalTask, inputId string, portName string) (result []NodeInput, err error) {
+func (this *Analytics) groupSelectionToNodeInputs(ctx context.Context, token auth.Token, selection model.DeviceGroupSelection, task model.CamundaExternalTask, inputId string, portName string) (result []NodeInput, err error) {
 	criteria, err := this.getNodePathCriteria(task, inputId, portName)
 	if err != nil {
 		return result, err
 	}
-	serviceIds, serviceToDevices, serviceToPaths, err := this.getServicesAndPathsForGroupSelection(token, selection, criteria)
+	serviceIds, serviceToDevices, serviceToPaths, err := this.getServicesAndPathsForGroupSelection(ctx, token, selection, criteria)
 	if err != nil {
 		return result, err
 	}
@@ -400,14 +406,14 @@ func (this *Analytics) groupSelectionToNodeInputs(token auth.Token, selection mo
 		return result, err
 	}
 	if len(serviceCriteria) > 0 {
-		filterServiceIds, _, _, err := this.getServicesAndPathsForGroupSelection(token, selection, serviceCriteria)
+		filterServiceIds, _, _, err := this.getServicesAndPathsForGroupSelection(ctx, token, selection, serviceCriteria)
 		if err != nil {
 			return result, err
 		}
 		serviceIds, serviceToDevices, serviceToPaths = filterServices(serviceIds, serviceToDevices, serviceToPaths, filterServiceIds)
 	}
 
-	result = this.serviceInfosToNodeInputs(serviceIds, serviceToDevices, serviceToPaths, portName)
+	result = this.serviceInfosToNodeInputs(ctx, serviceIds, serviceToDevices, serviceToPaths, portName)
 	return result, nil
 }
 
@@ -437,16 +443,16 @@ func filterServices(ids []string, toDevices map[string][]string, paths map[strin
 	return
 }
 
-func (this *Analytics) serviceInfosToNodeInputs(serviceIds []string, serviceToDevices map[string][]string, serviceToPaths map[string][]string, inputPort string) (result []NodeInput) {
+func (this *Analytics) serviceInfosToNodeInputs(ctx context.Context, serviceIds []string, serviceToDevices map[string][]string, serviceToPaths map[string][]string, inputPort string) (result []NodeInput) {
 	for _, serviceId := range serviceIds {
 		deviceIds := strings.Join(serviceToDevices[serviceId], ",")
 		if deviceIds == "" {
-			this.libConfig.GetLogger().Warn("missing deviceIds for service in serviceInfosToNodeInputs() --> skip service", "serviceId", serviceId)
+			this.libConfig.GetLogger().WarnContext(ctx, "missing deviceIds for service in serviceInfosToNodeInputs() --> skip service", "serviceId", serviceId)
 			continue
 		}
 		paths := serviceToPaths[serviceId]
 		if len(paths) == 0 {
-			this.libConfig.GetLogger().Warn("missing path for service in serviceInfosToNodeInputs() --> skip service", "serviceId", serviceId)
+			this.libConfig.GetLogger().WarnContext(ctx, "missing path for service in serviceInfosToNodeInputs() --> skip service", "serviceId", serviceId)
 			continue
 		}
 		values := []NodeValue{}
@@ -474,14 +480,14 @@ func (this *Analytics) serviceInfosToNodeInputs(serviceIds []string, serviceToDe
 	return result
 }
 
-func (this *Analytics) importSelectionToNodeInputs(token auth.Token, selection model.ImportSelection, inputPort string) (result []NodeInput, err error) {
+func (this *Analytics) importSelectionToNodeInputs(ctx context.Context, token auth.Token, selection model.ImportSelection, inputPort string) (result []NodeInput, err error) {
 	if selection.Id == "" {
 		return result, errors.New("expect import selection to contain id")
 	}
 	if selection.Path == nil {
 		return result, errors.New("expect import selection to contain path")
 	}
-	topic, err := this.imports.GetTopic(token, selection.Id)
+	topic, err := this.imports.GetTopic(ctx, token, selection.Id)
 	if err != nil {
 		return result, fmt.Errorf("unable to get topic for import (%v): %w", selection.Id, err)
 	}
@@ -504,21 +510,21 @@ func (this *Analytics) importSelectionToNodeInputs(token auth.Token, selection m
 	}}, nil
 }
 
-func (this *Analytics) getExistingModule(processInstanceId string, key string, moduleType string) (module model.Module, exists bool, err error) {
-	existingModules, err := this.smartServiceRepo.ListExistingModules(processInstanceId, model.ModulQuery{
+func (this *Analytics) getExistingModule(ctx context.Context, processInstanceId string, key string, moduleType string) (module model.Module, exists bool, err error) {
+	existingModules, err := this.smartServiceRepo.ListExistingModules(ctx, processInstanceId, model.ModulQuery{
 		KeyFilter:  &key,
 		TypeFilter: &moduleType,
 	})
 	if err != nil {
-		this.libConfig.GetLogger().Error("error in getExistingModule", "error", err)
+		this.libConfig.GetLogger().ErrorContext(ctx, "error in getExistingModule", "error", err)
 		return module, false, err
 	}
-	this.libConfig.GetLogger().Debug("existing module request", "processInstanceId", processInstanceId, "key", key, "moduleType", moduleType, "existingModules", existingModules)
+	this.libConfig.GetLogger().DebugContext(ctx, "existing module request", "processInstanceId", processInstanceId, "key", key, "moduleType", moduleType, "existingModules", existingModules)
 	if len(existingModules) == 0 {
 		return module, false, nil
 	}
 	if len(existingModules) > 1 {
-		this.libConfig.GetLogger().Warn("more than one existing module found", "processInstanceId", processInstanceId, "key", key, "moduleType", moduleType, "existingModules", existingModules)
+		this.libConfig.GetLogger().WarnContext(ctx, "more than one existing module found", "processInstanceId", processInstanceId, "key", key, "moduleType", moduleType, "existingModules", existingModules)
 	}
 	module.SmartServiceModuleInit = existingModules[0].SmartServiceModuleInit
 	module.ProcesInstanceId = processInstanceId

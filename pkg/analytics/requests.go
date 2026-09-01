@@ -18,6 +18,7 @@ package analytics
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -27,17 +28,18 @@ import (
 	"runtime/debug"
 	"time"
 
+	"github.com/SENERGY-Platform/gin-middleware/otelx"
 	"github.com/SENERGY-Platform/smart-service-module-worker-lib/pkg/auth"
 )
 
 var DefaultTimeout = 30 * time.Second
 
-func (this *Analytics) SendDeployRequest(token auth.Token, request PipelineRequest) (result Pipeline, err error, code int) {
+func (this *Analytics) SendDeployRequest(ctx context.Context, token auth.Token, request PipelineRequest) (result Pipeline, err error, code int) {
 	body, err := json.Marshal(request)
 	if err != nil {
 		return result, err, http.StatusInternalServerError
 	}
-	this.libConfig.GetLogger().Debug("deploy event pipeline", "request", string(body))
+	this.libConfig.GetLogger().DebugContext(ctx, "deploy event pipeline", "request", string(body))
 	client := http.Client{
 		Timeout: DefaultTimeout,
 	}
@@ -47,22 +49,27 @@ func (this *Analytics) SendDeployRequest(token auth.Token, request PipelineReque
 		bytes.NewBuffer(body),
 	)
 	if err != nil {
-		this.libConfig.GetLogger().Error("error in SendDeployRequest", "error", err, "stack", string(debug.Stack()))
+		this.libConfig.GetLogger().ErrorContext(ctx, "error in SendDeployRequest", "error", err, "stack", string(debug.Stack()))
+		return result, err, http.StatusInternalServerError
+	}
+	err = otelx.InjectContextToRequest(ctx, req)
+	if err != nil {
+		this.libConfig.GetLogger().ErrorContext(ctx, "error in SendDeployRequest", "error", err, "stack", string(debug.Stack()))
 		return result, err, http.StatusInternalServerError
 	}
 	req.Header.Set("Authorization", token.Jwt())
 	req.Header.Set("X-UserId", token.GetUserId())
-	this.libConfig.GetLogger().Debug("send analytics deployment with token", "token", req.Header.Get("Authorization"))
+	this.libConfig.GetLogger().DebugContext(ctx, "send analytics deployment")
 	resp, err := client.Do(req)
 	if err != nil {
-		this.libConfig.GetLogger().Error("error in SendDeployRequest", "error", err, "stack", string(debug.Stack()))
+		this.libConfig.GetLogger().ErrorContext(ctx, "error in SendDeployRequest", "error", err, "stack", string(debug.Stack()))
 		return result, err, http.StatusInternalServerError
 	}
 	defer resp.Body.Close()
 
 	if resp.StatusCode >= 300 {
 		err = errors.New("unexpected statuscode")
-		this.libConfig.GetLogger().Error("error in SendDeployRequest", "error", err, "stack", string(debug.Stack()), "statuscode", resp.StatusCode)
+		this.libConfig.GetLogger().ErrorContext(ctx, "error in SendDeployRequest", "error", err, "stack", string(debug.Stack()), "statuscode", resp.StatusCode)
 		return result, err, resp.StatusCode
 	}
 
@@ -70,12 +77,12 @@ func (this *Analytics) SendDeployRequest(token auth.Token, request PipelineReque
 	return result, err, http.StatusOK
 }
 
-func (this *Analytics) SendUpdateRequest(token auth.Token, request PipelineRequest) (result Pipeline, err error, code int) {
+func (this *Analytics) SendUpdateRequest(ctx context.Context, token auth.Token, request PipelineRequest) (result Pipeline, err error, code int) {
 	body, err := json.Marshal(request)
 	if err != nil {
 		return result, err, http.StatusInternalServerError
 	}
-	this.libConfig.GetLogger().Debug("deploy event pipeline", "request", string(body))
+	this.libConfig.GetLogger().DebugContext(ctx, "deploy event pipeline", "request", string(body))
 	client := http.Client{
 		Timeout: DefaultTimeout,
 	}
@@ -88,19 +95,24 @@ func (this *Analytics) SendUpdateRequest(token auth.Token, request PipelineReque
 		debug.PrintStack()
 		return result, err, http.StatusInternalServerError
 	}
+	err = otelx.InjectContextToRequest(ctx, req)
+	if err != nil {
+		this.libConfig.GetLogger().ErrorContext(ctx, "error in SendUpdateRequest", "error", err, "stack", string(debug.Stack()))
+		return result, err, http.StatusInternalServerError
+	}
 	req.Header.Set("Authorization", token.Jwt())
 	req.Header.Set("X-UserId", token.GetUserId())
-	this.libConfig.GetLogger().Debug("send analytics deployment update with token", "token", req.Header.Get("Authorization"))
+	this.libConfig.GetLogger().DebugContext(ctx, "send analytics deployment update")
 	resp, err := client.Do(req)
 	if err != nil {
-		this.libConfig.GetLogger().Error("error in SendDeployRequest", "error", err, "stack", string(debug.Stack()))
+		this.libConfig.GetLogger().ErrorContext(ctx, "error in SendDeployRequest", "error", err, "stack", string(debug.Stack()))
 		return result, err, http.StatusInternalServerError
 	}
 	defer resp.Body.Close()
 
 	if resp.StatusCode >= 300 {
 		err = errors.New("unexpected statuscode")
-		this.libConfig.GetLogger().Error("error in SendDeployRequest", "error", err, "stack", string(debug.Stack()), "statuscode", resp.StatusCode)
+		this.libConfig.GetLogger().ErrorContext(ctx, "error in SendDeployRequest", "error", err, "stack", string(debug.Stack()), "statuscode", resp.StatusCode)
 		return result, err, resp.StatusCode
 	}
 
@@ -108,7 +120,7 @@ func (this *Analytics) SendUpdateRequest(token auth.Token, request PipelineReque
 	return result, err, http.StatusOK
 }
 
-func (this *Analytics) Remove(token auth.Token, pipelineId string) error {
+func (this *Analytics) Remove(ctx context.Context, token auth.Token, pipelineId string) error {
 	client := http.Client{
 		Timeout: DefaultTimeout,
 	}
@@ -118,20 +130,25 @@ func (this *Analytics) Remove(token auth.Token, pipelineId string) error {
 		nil,
 	)
 	if err != nil {
-		this.libConfig.GetLogger().Error("error in Remove", "error", err, "stack", string(debug.Stack()))
+		this.libConfig.GetLogger().ErrorContext(ctx, "error in Remove", "error", err, "stack", string(debug.Stack()))
+		return err
+	}
+	err = otelx.InjectContextToRequest(ctx, req)
+	if err != nil {
+		this.libConfig.GetLogger().ErrorContext(ctx, "error in Remove", "error", err, "stack", string(debug.Stack()))
 		return err
 	}
 	req.Header.Set("Authorization", token.Jwt())
 	req.Header.Set("X-UserId", token.GetUserId())
 	resp, err := client.Do(req)
 	if err != nil {
-		this.libConfig.GetLogger().Error("error in Remove", "error", err, "stack", string(debug.Stack()))
+		this.libConfig.GetLogger().ErrorContext(ctx, "error in Remove", "error", err, "stack", string(debug.Stack()))
 		return err
 	}
 	defer resp.Body.Close()
 	if resp.StatusCode >= 300 {
 		err = errors.New("unexpected statuscode")
-		this.libConfig.GetLogger().Error("error in Remove", "error", err, "stack", string(debug.Stack()), "statuscode", resp.StatusCode)
+		this.libConfig.GetLogger().ErrorContext(ctx, "error in Remove", "error", err, "stack", string(debug.Stack()), "statuscode", resp.StatusCode)
 		return err
 	}
 	return nil
@@ -144,7 +161,7 @@ type PipelineState struct {
 	Transitioning bool   `json:"transitioning"`
 }
 
-func (this *Analytics) CheckPipeline(token auth.Token, pipelineId string) (state PipelineState, code int, err error) {
+func (this *Analytics) CheckPipeline(ctx context.Context, token auth.Token, pipelineId string) (state PipelineState, code int, err error) {
 	client := http.Client{
 		Timeout: DefaultTimeout,
 	}
@@ -154,17 +171,22 @@ func (this *Analytics) CheckPipeline(token auth.Token, pipelineId string) (state
 		nil,
 	)
 	if err != nil {
-		this.libConfig.GetLogger().Error("error in CheckPipeline", "error", err, "stack", string(debug.Stack()))
+		this.libConfig.GetLogger().ErrorContext(ctx, "error in CheckPipeline", "error", err, "stack", string(debug.Stack()))
+		return state, 0, err
+	}
+	err = otelx.InjectContextToRequest(ctx, req)
+	if err != nil {
+		this.libConfig.GetLogger().ErrorContext(ctx, "error in CheckPipeline", "error", err, "stack", string(debug.Stack()))
 		return state, 0, err
 	}
 	req.Header.Set("Authorization", token.Jwt())
 	req.Header.Set("X-UserId", token.GetUserId())
 
-	this.libConfig.GetLogger().Debug("check pipeline request", "url", req.URL.String(), "method", req.Method, "token", req.Header.Get("Authorization"), "xuser", req.Header.Get("X-UserId"))
+	this.libConfig.GetLogger().DebugContext(ctx, "check pipeline request", "url", req.URL.String(), "method", req.Method, "xuser", req.Header.Get("X-UserId"))
 
 	resp, err := client.Do(req)
 	if err != nil {
-		this.libConfig.GetLogger().Error("error in CheckPipeline", "error", err, "stack", string(debug.Stack()))
+		this.libConfig.GetLogger().ErrorContext(ctx, "error in CheckPipeline", "error", err, "stack", string(debug.Stack()))
 		return state, 0, err
 	}
 	defer resp.Body.Close()
@@ -180,7 +202,7 @@ func (this *Analytics) CheckPipeline(token auth.Token, pipelineId string) (state
 	return state, resp.StatusCode, nil
 }
 
-func (this *Analytics) GetFlowInputs(token auth.Token, id string) (result []FlowModelCell, err error, code int) {
+func (this *Analytics) GetFlowInputs(ctx context.Context, token auth.Token, id string) (result []FlowModelCell, err error, code int) {
 	client := http.Client{
 		Timeout: DefaultTimeout,
 	}
@@ -190,28 +212,33 @@ func (this *Analytics) GetFlowInputs(token auth.Token, id string) (result []Flow
 		nil,
 	)
 	if err != nil {
-		this.libConfig.GetLogger().Error("error in GetFlowInputs", "error", err, "stack", string(debug.Stack()))
+		this.libConfig.GetLogger().ErrorContext(ctx, "error in GetFlowInputs", "error", err, "stack", string(debug.Stack()))
+		return result, err, http.StatusInternalServerError
+	}
+	err = otelx.InjectContextToRequest(ctx, req)
+	if err != nil {
+		this.libConfig.GetLogger().ErrorContext(ctx, "error in GetFlowInputs", "error", err, "stack", string(debug.Stack()))
 		return result, err, http.StatusInternalServerError
 	}
 	req.Header.Set("Authorization", token.Jwt())
 	req.Header.Set("X-UserId", token.GetUserId())
 	resp, err := client.Do(req)
 	if err != nil {
-		this.libConfig.GetLogger().Error("error in GetFlowInputs", "error", err, "stack", string(debug.Stack()))
+		this.libConfig.GetLogger().ErrorContext(ctx, "error in GetFlowInputs", "error", err, "stack", string(debug.Stack()))
 		return result, err, http.StatusInternalServerError
 	}
 	defer resp.Body.Close()
 
 	if resp.StatusCode >= 300 {
 		err = errors.New("unexpected statuscode")
-		this.libConfig.GetLogger().Error("error in GetFlowInputs", "error", err, "stack", string(debug.Stack()), "statuscode", resp.StatusCode)
+		this.libConfig.GetLogger().ErrorContext(ctx, "error in GetFlowInputs", "error", err, "stack", string(debug.Stack()), "statuscode", resp.StatusCode)
 		return result, err, resp.StatusCode
 	}
 
 	temp, err := io.ReadAll(resp.Body)
 	err = json.Unmarshal(temp, &result)
 	if err != nil {
-		this.libConfig.GetLogger().Error("error in GetFlowInputs", "error", err, "stack", string(debug.Stack()), "payload", string(temp))
+		this.libConfig.GetLogger().ErrorContext(ctx, "error in GetFlowInputs", "error", err, "stack", string(debug.Stack()), "payload", string(temp))
 		return result, err, http.StatusInternalServerError
 	}
 	return result, err, http.StatusOK

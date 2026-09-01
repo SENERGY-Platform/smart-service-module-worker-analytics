@@ -18,6 +18,7 @@ package devices
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"errors"
 	"net/http"
@@ -26,6 +27,7 @@ import (
 	"strconv"
 
 	"github.com/SENERGY-Platform/device-repository/lib/client"
+	"github.com/SENERGY-Platform/gin-middleware/otelx"
 	"github.com/SENERGY-Platform/smart-service-module-worker-lib/pkg/auth"
 )
 
@@ -37,16 +39,16 @@ func New(deviceRepositoryUrl string) *Devices {
 	return &Devices{deviceRepositoryUrl: deviceRepositoryUrl}
 }
 
-func (this *Devices) GetDeviceInfosOfGroup(token auth.Token, groupId string) (devices []Device, deviceTypeIds []string, err error) {
-	group, err := this.GetDeviceGroup(token, groupId)
+func (this *Devices) GetDeviceInfosOfGroup(ctx context.Context, token auth.Token, groupId string) (devices []Device, deviceTypeIds []string, err error) {
+	group, err := this.GetDeviceGroup(ctx, token, groupId)
 	if err != nil {
 		return devices, nil, err
 	}
-	return this.GetDeviceInfosOfDevices(token, group.DeviceIds)
+	return this.GetDeviceInfosOfDevices(ctx, token, group.DeviceIds)
 }
 
-func (this *Devices) GetDeviceInfosOfDevices(token auth.Token, deviceIds []string) (devices []Device, deviceTypeIds []string, err error) {
-	devices, err = this.GetDevicesWithIds(token, deviceIds)
+func (this *Devices) GetDeviceInfosOfDevices(ctx context.Context, token auth.Token, deviceIds []string) (devices []Device, deviceTypeIds []string, err error) {
+	devices, err = this.GetDevicesWithIds(ctx, token, deviceIds)
 	if err != nil {
 		return devices, nil, err
 	}
@@ -60,7 +62,9 @@ func (this *Devices) GetDeviceInfosOfDevices(token auth.Token, deviceIds []strin
 	return devices, deviceTypeIds, nil
 }
 
-func (this *Devices) GetDeviceGroup(token auth.Token, groupId string) (result DeviceGroup, err error) {
+// GetDeviceGroup uses the device-repository client, which has no context based methods; ctx
+// is accepted for a uniform signature with the rest of this file but not used here.
+func (this *Devices) GetDeviceGroup(ctx context.Context, token auth.Token, groupId string) (result DeviceGroup, err error) {
 	dg, err, _ := client.NewClient(this.deviceRepositoryUrl, nil).ReadDeviceGroup(groupId, token.Jwt(), false)
 	if err != nil {
 		return result, err
@@ -72,7 +76,9 @@ func (this *Devices) GetDeviceGroup(token auth.Token, groupId string) (result De
 	}, nil
 }
 
-func (this *Devices) GetDevicesWithIds(token auth.Token, ids []string) (result []Device, err error) {
+// GetDevicesWithIds uses the device-repository client, which has no context based methods; ctx
+// is accepted for a uniform signature with the rest of this file but not used here.
+func (this *Devices) GetDevicesWithIds(ctx context.Context, token auth.Token, ids []string) (result []Device, err error) {
 	device, err, _ := client.NewClient(this.deviceRepositoryUrl, nil).ListDevices(token.Jwt(), client.DeviceListOptions{
 		Ids:    ids,
 		Limit:  int64(len(ids)),
@@ -92,7 +98,7 @@ func (this *Devices) GetDevicesWithIds(token auth.Token, ids []string) (result [
 	return result, nil
 }
 
-func (this *Devices) GetDeviceTypeSelectables(token auth.Token, criteria []FilterCriteria, includeModified bool, servicesMustMatchAllCriteria bool) (result []DeviceTypeSelectable, err error) {
+func (this *Devices) GetDeviceTypeSelectables(ctx context.Context, token auth.Token, criteria []FilterCriteria, includeModified bool, servicesMustMatchAllCriteria bool) (result []DeviceTypeSelectable, err error) {
 	requestBody := new(bytes.Buffer)
 	err = json.NewEncoder(requestBody).Encode(criteria)
 	if err != nil {
@@ -104,6 +110,10 @@ func (this *Devices) GetDeviceTypeSelectables(token auth.Token, criteria []Filte
 	req, err := http.NewRequest("POST", this.deviceRepositoryUrl+"/v2/query/device-type-selectables?"+query.Encode(), requestBody)
 	if err != nil {
 		debug.PrintStack()
+		return result, err
+	}
+	err = otelx.InjectContextToRequest(ctx, req)
+	if err != nil {
 		return result, err
 	}
 	req.Header.Set("Authorization", token.Jwt())

@@ -17,31 +17,33 @@
 package analytics
 
 import (
+	"context"
+
 	"github.com/SENERGY-Platform/smart-service-module-worker-analytics/pkg/devices"
 	"github.com/SENERGY-Platform/smart-service-module-worker-lib/pkg/auth"
 	"github.com/SENERGY-Platform/smart-service-module-worker-lib/pkg/model"
 )
 
-func (this *Analytics) getServicesAndPathsForGroupSelection(token auth.Token, selection model.DeviceGroupSelection, criteria []devices.FilterCriteria) (serviceIds []string, serviceToDevices map[string][]string, serviceToPath map[string][]string, err error) {
-	devices, deviceTypeIds, err := this.devices.GetDeviceInfosOfGroup(token, selection.Id)
+func (this *Analytics) getServicesAndPathsForGroupSelection(ctx context.Context, token auth.Token, selection model.DeviceGroupSelection, criteria []devices.FilterCriteria) (serviceIds []string, serviceToDevices map[string][]string, serviceToPath map[string][]string, err error) {
+	devices, deviceTypeIds, err := this.devices.GetDeviceInfosOfGroup(ctx, token, selection.Id)
 	if err != nil {
 		return nil, nil, nil, err
 	}
-	return this.getServicesAndPathsForDevices(token, devices, deviceTypeIds, criteria)
+	return this.getServicesAndPathsForDevices(ctx, token, devices, deviceTypeIds, criteria)
 }
 
-func (this *Analytics) getServicesAndPathsForDeviceIdList(token auth.Token, deviceIds []string, criteria []devices.FilterCriteria) (serviceIds []string, serviceToDevices map[string][]string, serviceToPath map[string][]string, err error) {
-	devices, deviceTypeIds, err := this.devices.GetDeviceInfosOfDevices(token, deviceIds)
+func (this *Analytics) getServicesAndPathsForDeviceIdList(ctx context.Context, token auth.Token, deviceIds []string, criteria []devices.FilterCriteria) (serviceIds []string, serviceToDevices map[string][]string, serviceToPath map[string][]string, err error) {
+	devices, deviceTypeIds, err := this.devices.GetDeviceInfosOfDevices(ctx, token, deviceIds)
 	if err != nil {
 		return nil, nil, nil, err
 	}
-	return this.getServicesAndPathsForDevices(token, devices, deviceTypeIds, criteria)
+	return this.getServicesAndPathsForDevices(ctx, token, devices, deviceTypeIds, criteria)
 }
 
-func (this *Analytics) getServicesAndPathsForDevices(token auth.Token, deviceList []devices.Device, deviceTypeIds []string, criteria []devices.FilterCriteria) (serviceIds []string, serviceToDevices map[string][]string, serviceToPath map[string][]string, err error) {
-	options, err := this.getDeviceGroupPathOptions(token, criteria, deviceTypeIds)
+func (this *Analytics) getServicesAndPathsForDevices(ctx context.Context, token auth.Token, deviceList []devices.Device, deviceTypeIds []string, criteria []devices.FilterCriteria) (serviceIds []string, serviceToDevices map[string][]string, serviceToPath map[string][]string, err error) {
+	options, err := this.getDeviceGroupPathOptions(ctx, token, criteria, deviceTypeIds)
 	if err != nil {
-		this.libConfig.GetLogger().Error("unable to find path options", "error", err)
+		this.libConfig.GetLogger().ErrorContext(ctx, "unable to find path options", "error", err)
 		return nil, nil, nil, err
 	}
 	serviceIds = []string{}
@@ -68,7 +70,7 @@ func (this *Analytics) getServicesAndPathsForDevices(token auth.Token, deviceLis
 	return serviceIds, serviceToDevices, serviceToPath, nil
 }
 
-func (this *Analytics) getDeviceGroupPathOptions(token auth.Token, criteria []devices.FilterCriteria, deviceTypeIds []string) (result map[string][]devices.PathOptionsResultElement, err error) {
+func (this *Analytics) getDeviceGroupPathOptions(ctx context.Context, token auth.Token, criteria []devices.FilterCriteria, deviceTypeIds []string) (result map[string][]devices.PathOptionsResultElement, err error) {
 	result = map[string][]devices.PathOptionsResultElement{}
 	for i, c := range criteria {
 		if c.Interaction == "" {
@@ -76,9 +78,9 @@ func (this *Analytics) getDeviceGroupPathOptions(token auth.Token, criteria []de
 		}
 		criteria[i] = c
 	}
-	selectables, err := this.devices.GetDeviceTypeSelectables(token, criteria, true, true)
+	selectables, err := this.devices.GetDeviceTypeSelectables(ctx, token, criteria, true, true)
 	if err != nil {
-		this.libConfig.GetLogger().Error("unable to find device type selectables", "error", err)
+		this.libConfig.GetLogger().ErrorContext(ctx, "unable to find device type selectables", "error", err)
 		return result, err
 	}
 	for _, dtId := range deviceTypeIds {
@@ -95,7 +97,7 @@ func (this *Analytics) getDeviceGroupPathOptions(token auth.Token, criteria []de
 							temp.JsonPath = append(temp.JsonPath, option.Path)
 							temp.PathToCharacteristicId[option.Path] = option.CharacteristicId
 						} else {
-							this.libConfig.GetLogger().Warn("unexpected service id in ServicePathOptions")
+							this.libConfig.GetLogger().WarnContext(ctx, "unexpected service id in ServicePathOptions")
 						}
 					}
 					result[dtId] = append(result[dtId], temp)
