@@ -127,10 +127,12 @@ type EventPipelineDescription struct {
 	DeviceId      string `json:"device_id,omitempty"`
 	ServiceId     string `json:"service_id,omitempty"`
 	FunctionId    string `json:"function_id,omitempty"`
-	AspectId      string `json:"aspect_id,omitempty"`
-	ValuePath     string `json:"value_path,omitempty"`
-	OperatorValue string `json:"operator_value"`
-	EventId       string `json:"event_id"`
-	DeploymentId  string `json:"deployment_id"`
-	FlowId        string `json:"flow_id,omitempty"`
+	// Deprecated: use AspectIds; AspectId is an alias for an AspectIds list with a single element.
+	AspectId      string   `json:"aspect_id,omitempty"`
+	AspectIds     []string `json:"aspect_ids,omitempty"`
+	ValuePath     string   `json:"value_path,omitempty"`
+	OperatorValue string   `json:"operator_value"`
+	EventId       string   `json:"event_id"`
+	DeploymentId  string   `json:"deployment_id"`
+	FlowId        string   `json:"flow_id,omitempty"`
 }

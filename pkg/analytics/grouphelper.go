@@ -76,6 +76,8 @@ func (this *Analytics) getDeviceGroupPathOptions(ctx context.Context, token auth
 		if c.Interaction == "" {
 			c.Interaction = devices.EVENT
 		}
+		// the deprecated AspectId stays set, so a device-repository without aspect lists still receives it
+		c.AspectIds = c.GetAspectIds()
 		criteria[i] = c
 	}
 	selectables, err := this.devices.GetDeviceTypeSelectables(ctx, token, criteria, true, true)

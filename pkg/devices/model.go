@@ -16,11 +16,25 @@
 
 package devices
 
+import "slices"
+
 type FilterCriteria struct {
 	Interaction   Interaction `json:"interaction"`
 	FunctionId    string      `json:"function_id"`
 	DeviceClassId string      `json:"device_class_id"`
-	AspectId      string      `json:"aspect_id"`
+	// Deprecated: use AspectIds; AspectId is an alias for an AspectIds list with a single element.
+	AspectId  string   `json:"aspect_id"`
+	AspectIds []string `json:"aspect_ids,omitempty"`
+}
+
+// GetAspectIds returns AspectIds with the deprecated AspectId appended, unless it is empty or already contained.
+// Several aspects in one criteria are ANDed on one content variable by the device-repository.
+func (this FilterCriteria) GetAspectIds() []string {
+	result := append([]string{}, this.AspectIds...)
+	if this.AspectId != "" && !slices.Contains(result, this.AspectId) {
+		result = append(result, this.AspectId)
+	}
+	return result
 }
 
 type Interaction string
